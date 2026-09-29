@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:single": "tsc && vite build --config vite.singlefile.config.ts && node -e \"const fs=require('fs'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.0-offline.html');\"",
+    "build:single": "tsc && vite build --config vite.singlefile.config.ts && node -e \"const fs=require('fs'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.2-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.0-offline.html');\"",
     "preview": "vite preview"
   },
   "dependencies": {

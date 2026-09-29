@@ -1,10 +1,10 @@
 import React from 'react';
-import { Layers, Coffee, BookOpen, Lock, ShieldCheck } from 'lucide-react';
+import { Layers, Coffee, BookOpen, Lock, ShieldCheck, History } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
 interface NavbarProps {
   onOpenGuide: () => void;
-  onOpenAbout: () => void;
+  onOpenAbout: (tab?: 'coffee' | 'history' | 'about') => void;
   onLockApp: () => void;
 }
 
@@ -23,9 +23,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide, onOpenAbout, onLock
                 <span className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">
                   {APP_META.name}
                 </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+                <button
+                  type="button"
+                  onClick={() => onOpenAbout('history')}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 hover:bg-sky-200 border border-sky-300 transition-colors cursor-pointer"
+                  title="Nhấp để xem chi tiết Lịch sử phiên bản (Changelog)"
+                >
                   v{APP_META.version}
-                </span>
+                </button>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" />
                   Offline 100%
@@ -42,14 +47,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide, onOpenAbout, onLock
             <button
               onClick={onOpenGuide}
               className="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:text-sky-700 hover:bg-sky-50 border border-slate-200 transition-colors cursor-pointer"
-              title="Hướng dẫn sử dụng"
+              title="Hướng dẫn sử dụng chi tiết"
             >
               <BookOpen className="w-4 h-4 sm:mr-1.5 text-sky-600" />
               <span className="hidden sm:inline">Hướng dẫn</span>
             </button>
 
             <button
-              onClick={onOpenAbout}
+              onClick={() => onOpenAbout('history')}
+              className="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg text-slate-700 hover:text-sky-700 hover:bg-sky-50 border border-slate-200 transition-colors cursor-pointer"
+              title="Lịch sử cập nhật phiên bản"
+            >
+              <History className="w-4 h-4 sm:mr-1.5 text-sky-600" />
+              <span className="hidden sm:inline">Lịch sử (v{APP_META.version})</span>
+            </button>
+
+            <button
+              onClick={() => onOpenAbout('coffee')}
               className="inline-flex items-center px-3 py-2 text-xs font-semibold rounded-lg text-amber-800 bg-amber-50/70 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
               title="Tác giả & Mời cà phê"
             >

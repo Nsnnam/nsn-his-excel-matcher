@@ -25,6 +25,25 @@ export const APP_META = {
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
     {
+      version: '1.0.2',
+      date: '2026-09-29',
+      features: [
+        'Tự động ẩn khung nạp 2 file đầu vào sau khi ghép dữ liệu xong, tập trung màn hình vào Thống kê, Khối xuất Excel nổi bật và Bảng đối chiếu.',
+        'Bổ sung thanh điều khiển nhỏ gọn cho phép nhấp "Hiện khung nạp file" hoặc "Xóa DS" bất cứ lúc nào.',
+        'Cố định tên file xuất ra thành FileMauChuan_NsN.xlsx (bỏ timestamp) phục vụ trực tiếp phần mềm in tem BarTender (.btw) và Mail Merge.',
+        'Thêm khối biểu ngữ CTA tải file FileMauChuan_NsN.xlsx siêu nổi bật ngay trên đầu bảng kết quả.',
+      ],
+    },
+    {
+      version: '1.0.1',
+      date: '2026-09-29',
+      features: [
+        'Tối ưu hóa đối soát Ngày sinh & Tuổi: Cùng họ tên nhưng khác ngày sinh/tuổi là 2 người khác nhau, tự động xếp vào Khớp chuẩn 1-1 và bỏ qua cảnh báo.',
+        'Chỉ cảnh báo đối với trường hợp trùng lặp thực sự: Cùng họ tên VÀ cùng ngày tháng năm sinh / cùng tuổi trên HIS.',
+        'Bổ sung banner xanh báo trạng thái tích cực "0 Cảnh báo" khi toàn bộ danh sách được ghép chuẩn xác.',
+      ],
+    },
+    {
       version: '1.0.0',
       date: '2026-09-29',
       features: [

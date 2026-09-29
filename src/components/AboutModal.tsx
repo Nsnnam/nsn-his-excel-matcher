@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
-import { X, Coffee, Check, Copy, ExternalLink, ShieldCheck, History, Info, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Coffee, Check, Copy, ExternalLink, ShieldCheck, History, Info, Sparkles, Tag } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
 interface AboutModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'coffee' | 'history' | 'about';
 }
 
-export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initialTab = 'coffee' }) => {
   const [copied, setCopied] = useState(false);
-  const [modalTab, setModalTab] = useState<'coffee' | 'history' | 'about'>('coffee');
+  const [modalTab, setModalTab] = useState<'coffee' | 'history' | 'about'>(initialTab);
+
+  useEffect(() => {
+    if (isOpen) {
+      setModalTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -44,34 +51,37 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Tab Buttons */}
         <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
           <button
-            onClick={() => setModalTab('coffee')}
-            className={`pb-2.5 px-3 text-sm font-semibold border-b-2 flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              modalTab === 'coffee'
-                ? 'border-amber-500 text-amber-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Coffee className="w-4 h-4 text-amber-500" />
-            <span>Mời cà phê tác giả</span>
-          </button>
-
-          <button
             onClick={() => setModalTab('history')}
             className={`pb-2.5 px-3 text-sm font-semibold border-b-2 flex items-center space-x-1.5 transition-colors cursor-pointer ${
               modalTab === 'history'
-                ? 'border-sky-500 text-sky-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px'
+                ? 'border-sky-500 text-sky-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px shadow-xs'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             <History className="w-4 h-4 text-sky-600" />
             <span>Lịch sử phiên bản</span>
+            <span className="ml-1 px-1.5 py-0.2 bg-sky-100 text-sky-800 rounded-full text-[10px] font-bold">
+              v{APP_META.version}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setModalTab('coffee')}
+            className={`pb-2.5 px-3 text-sm font-semibold border-b-2 flex items-center space-x-1.5 transition-colors cursor-pointer ${
+              modalTab === 'coffee'
+                ? 'border-amber-500 text-amber-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px shadow-xs'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Coffee className="w-4 h-4 text-amber-500" />
+            <span>Mời cà phê</span>
           </button>
 
           <button
             onClick={() => setModalTab('about')}
             className={`pb-2.5 px-3 text-sm font-semibold border-b-2 flex items-center space-x-1.5 transition-colors cursor-pointer ${
               modalTab === 'about'
-                ? 'border-sky-500 text-sky-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px'
+                ? 'border-sky-500 text-sky-700 bg-white rounded-t-lg border-t border-x border-b-white -mb-px shadow-xs'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -82,6 +92,44 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
         {/* Tab Contents */}
         <div className="p-6">
+          {/* 1. LỊCH SỬ PHIÊN BẢN */}
+          {modalTab === 'history' && (
+            <div className="space-y-4 max-h-85 overflow-y-auto pr-1">
+              <div className="text-xs text-slate-500 mb-2">
+                Nhật ký cập nhật và cải tiến chi tiết theo chuẩn NSN App Standard:
+              </div>
+              {APP_META.changelog.map((log, index) => (
+                <div
+                  key={log.version}
+                  className={`pl-4 py-2 border-l-2 ${
+                    index === 0 ? 'border-sky-500 bg-sky-50/50 rounded-r-lg p-2.5' : 'border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-slate-900 text-sm">Phiên bản {log.version}</span>
+                      {index === 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-600 text-white uppercase tracking-wider">
+                          Mới nhất
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono text-slate-400">{log.date}</span>
+                  </div>
+                  <ul className="mt-2 space-y-1.5 text-xs text-slate-600">
+                    {log.features.map((h, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="text-sky-500 font-bold shrink-0 mt-0.5">•</span>
+                        <span className="leading-relaxed">{h}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 2. MỜI CÀ PHÊ TÁC GIẢ */}
           {modalTab === 'coffee' && (
             <div className="space-y-4">
               <div className="text-center">
@@ -134,24 +182,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {modalTab === 'history' && (
-            <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
-              {APP_META.changelog.map((log) => (
-                <div key={log.version} className="border-l-2 border-sky-500 pl-4 py-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 text-sm">Phiên bản {log.version}</span>
-                    <span className="text-xs text-slate-400">{log.date}</span>
-                  </div>
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600 list-disc list-inside">
-                    {log.features.map((h, i) => (
-                      <li key={i}>{h}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-
+          {/* 3. VỀ ỨNG DỤNG */}
           {modalTab === 'about' && (
             <div className="space-y-3 text-sm text-slate-600">
               <div className="flex items-center space-x-2 text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 text-xs">
@@ -168,7 +199,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5">
                 <div><strong>Tác giả:</strong> {APP_META.author.name} ({APP_META.author.alias})</div>
                 <div><strong>Zalo:</strong> {APP_META.author.zalo}</div>
+                <div><strong>Email:</strong> {APP_META.author.email}</div>
                 <div><strong>GitHub:</strong> <a href={APP_META.author.github} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">{APP_META.author.github}</a></div>
+                <div><strong>Kho lưu trữ:</strong> <a href={APP_META.author.repo} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:underline">{APP_META.author.repo}</a></div>
                 <div><strong>Múi giờ:</strong> GMT+7 ({APP_META.timezone})</div>
                 <div><strong>Quy chuẩn:</strong> NSN App Standard (Exact-Match, Clear Import, General Text)</div>
               </div>

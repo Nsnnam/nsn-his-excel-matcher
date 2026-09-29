@@ -37,7 +37,13 @@ export const App: React.FC = () => {
   // Modals
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [aboutTab, setAboutTab] = useState<'coffee' | 'history' | 'about'>('history');
   const [disambiguatingRecord, setDisambiguatingRecord] = useState<MatchedRecord | null>(null);
+
+  const handleOpenAbout = (tab: 'coffee' | 'history' | 'about' = 'history') => {
+    setAboutTab(tab);
+    setIsAboutOpen(true);
+  };
 
   // File 1: HIS
   const [hisFile, setHisFile] = useState<File | null>(null);
@@ -237,7 +243,7 @@ export const App: React.FC = () => {
       {/* 2. NAVBAR */}
       <Navbar
         onOpenGuide={() => setIsGuideOpen(true)}
-        onOpenAbout={() => setIsAboutOpen(true)}
+        onOpenAbout={handleOpenAbout}
         onLockApp={handleLockApp}
       />
 
@@ -353,11 +359,25 @@ export const App: React.FC = () => {
         onManualCustomEdit={handleManualCustomEdit}
       />
 
-      <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
-      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      <GuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        onOpenHistory={() => {
+          setIsGuideOpen(false);
+          handleOpenAbout('history');
+        }}
+      />
+      <AboutModal
+        isOpen={isAboutOpen}
+        initialTab={aboutTab}
+        onClose={() => setIsAboutOpen(false)}
+      />
 
       {/* 5. FOOTER */}
-      <Footer onOpenAbout={() => setIsAboutOpen(true)} />
+      <Footer
+        onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenAbout={handleOpenAbout}
+      />
     </div>
   );
 };
