@@ -632,16 +632,7 @@ export function exportToStandardExcel(records: MatchedRecord[], fileNamePrefix: 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Chuan');
 
-  // GMT+7 Timestamp: HHmmss_Prefix_yyyyMMdd.xlsx
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const yyyy = now.getFullYear();
-  const MM = pad(now.getMonth() + 1);
-  const dd = pad(now.getDate());
-  const HH = pad(now.getHours());
-  const mm = pad(now.getMinutes());
-  const ss = pad(now.getSeconds());
-
-  const fullFileName = `${HH}${mm}${ss}_${fileNamePrefix}_${yyyy}${MM}${dd}.xlsx`;
+  // Default export filename: FileMauChuan_NsN.xlsx (for BarTender label printing & Mail Merge compatibility)
+  const fullFileName = fileNamePrefix.endsWith('.xlsx') ? fileNamePrefix : `${fileNamePrefix}.xlsx`;
   XLSX.writeFile(wb, fullFileName);
 }

@@ -4,6 +4,18 @@ Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa
 
 ---
 
+## [1.0.2] - 2026-09-29
+
+### Cải tiến (Changed)
+- **Tối ưu hóa luồng giao diện sau khi ghép (UX Workflow):**
+  - Tự động ẩn khung nạp 2 file đầu vào sau khi ghép dữ liệu hoàn tất để màn hình tập trung hoàn toàn vào Bảng thống kê, Khối xuất Excel nổi bật và Bảng danh sách kết quả đối chiếu.
+  - Bổ sung thanh điều khiển nhỏ gọn cho phép mở lại khung nạp file (`Hiện khung nạp file`) hoặc `Xóa danh sách (Clear Import)` bất kỳ lúc nào.
+- **Tên file xuất chuẩn hóa cố định (`FileMauChuan_NsN.xlsx`):**
+  - Cố định tên file tải về thành `FileMauChuan_NsN.xlsx` (bỏ tiền tố timestamp ngày giờ) giúp phần mềm in tem BarTender (`.btw`) và Word Mail Merge tự động nhận diện cơ sở dữ liệu ngay lập tức mà không cần đổi tên thủ công.
+  - Bổ sung khối biểu ngữ CTA tải file nổi bật với phong cách sắc nét, chuyên nghiệp ngay đầu khu vực kết quả.
+
+---
+
 ## [1.0.1] - 2026-09-29
 
 ### Cải tiến (Changed)

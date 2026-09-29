@@ -80,7 +80,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-600/25 flex items-center justify-center space-x-2 transition-all cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            <span>Xuất File Mẫu Chuẩn NSN (.xlsx)</span>
+            <span>Xuất File: FileMauChuan_NsN.xlsx</span>
             <span className="px-2 py-0.5 rounded-full bg-emerald-800/60 text-white text-[11px] font-bold">
               {records.length} dòng
             </span>

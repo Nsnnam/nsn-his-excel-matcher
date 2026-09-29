@@ -2,7 +2,7 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.1',
+  version: '1.0.2',
   releaseDate: '2026-09-29',
   description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
   author: {

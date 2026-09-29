@@ -24,7 +24,9 @@ import {
   parseBiaRows,
   matchRecords,
   calculateAge,
+  exportToStandardExcel,
 } from './services/dataEngine';
+import { Download, UploadCloud, Trash2, FileCheck, Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Authentication State
@@ -53,6 +55,9 @@ export const App: React.FC = () => {
   const [matchedResults, setMatchedResults] = useState<MatchedRecord[]>([]);
   const [summary, setSummary] = useState<ProcessingSummary | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'warning' | 'exact' | 'unmatched_bia' | 'unmatched_his'>('all');
+
+  // UI state: hide upload section after matching is done to focus on results & export
+  const [isUploadVisible, setIsUploadVisible] = useState(true);
 
   // Handle Lock App
   const handleLockApp = () => {
@@ -139,6 +144,9 @@ export const App: React.FC = () => {
         setMatchedResults(results);
         setSummary(sum);
 
+        // Hide upload section to focus on results & export
+        setIsUploadVisible(false);
+
         // If there are duplicate warnings (same name AND same dob), switch to warning filter
         if (sum.warningSameDobCount > 0 || sum.warningMismatchDobCount > 0) {
           setActiveFilter('warning');
@@ -167,6 +175,14 @@ export const App: React.FC = () => {
       setMatchedResults([]);
       setSummary(null);
       setActiveFilter('all');
+      setIsUploadVisible(true);
+    }
+  };
+
+  // Direct export default standard file
+  const handleDirectExport = () => {
+    if (matchedResults.length > 0) {
+      exportToStandardExcel(matchedResults, 'FileMauChuan_NsN');
     }
   };
 
@@ -227,25 +243,88 @@ export const App: React.FC = () => {
 
       {/* 3. MAIN CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Upload Zone */}
-        <FileUploadSection
-          hisFile={hisFile}
-          hisRecordCount={hisRecords.length}
-          onHisFileChange={handleHisFileChange}
-          biaFile={biaFile}
-          biaRecordCount={biaRecords.length}
-          availableSheets={availableSheets}
-          selectedSheet={selectedSheet}
-          onSheetChange={handleSheetChange}
-          onBiaFileChange={handleBiaFileChange}
-          isProcessing={isProcessing}
-          onProcess={handleProcess}
-          onClearImport={handleClearImport}
-        />
+        {/* Upload Zone (Visible initially or when user toggles) */}
+        {isUploadVisible ? (
+          <FileUploadSection
+            hisFile={hisFile}
+            hisRecordCount={hisRecords.length}
+            onHisFileChange={handleHisFileChange}
+            biaFile={biaFile}
+            biaRecordCount={biaRecords.length}
+            availableSheets={availableSheets}
+            selectedSheet={selectedSheet}
+            onSheetChange={handleSheetChange}
+            onBiaFileChange={handleBiaFileChange}
+            isProcessing={isProcessing}
+            onProcess={handleProcess}
+            onClearImport={handleClearImport}
+          />
+        ) : (
+          /* Compact Header bar when upload section is hidden */
+          <div className="bg-white rounded-2xl shadow-xs border border-slate-200 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center space-x-3 text-xs text-slate-600 truncate">
+              <FileCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div className="truncate">
+                <span className="font-bold text-slate-800">Dữ liệu đầu vào:</span>{' '}
+                <span className="text-sky-700 font-semibold">{hisFile?.name}</span> ({hisRecords.length} dòng HIS) +{' '}
+                <span className="text-indigo-700 font-semibold">{biaFile?.name}</span> ({biaRecords.length} hồ sơ Bìa)
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsUploadVisible(true)}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors cursor-pointer"
+                title="Hiển thị lại khung nạp file nếu cần thay đổi hoặc nạp thêm"
+              >
+                <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
+                Hiện khung nạp file
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearImport}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                title="Xóa danh sách và đặt lại trạng thái ban đầu"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Xóa DS
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Results Section */}
         {summary && matchedResults.length > 0 && (
           <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Prominent Export CTA Banner */}
+            <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 rounded-2xl p-5 sm:p-6 text-white shadow-lg shadow-emerald-700/20 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="space-y-1 text-center md:text-left">
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-xs mb-1">
+                  ✓ Sẵn sàng xuất in tem nhãn (Mail Merge / BarTender)
+                </div>
+                <h3 className="text-lg sm:text-xl font-extrabold tracking-tight">
+                  Xuất File Mẫu Chuẩn: <span className="underline decoration-amber-300 underline-offset-4">FileMauChuan_NsN.xlsx</span>
+                </h3>
+                <p className="text-xs text-emerald-100 max-w-2xl leading-relaxed">
+                  Tên file mặc định chuẩn xác <strong>FileMauChuan_NsN.xlsx</strong> giúp phần mềm in tem BarTender và Mail Merge tự động nhận dạng cơ sở dữ liệu ngay lập tức mà không cần đổi tên thủ công.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDirectExport}
+                className="w-full md:w-auto px-7 py-3.5 bg-white text-emerald-800 hover:bg-amber-300 hover:text-slate-900 font-black text-sm sm:text-base rounded-xl shadow-xl transition-all flex items-center justify-center space-x-2.5 shrink-0 transform hover:-translate-y-0.5 cursor-pointer"
+              >
+                <Download className="w-5 h-5 text-emerald-700" />
+                <span>TẢI FILE: FileMauChuan_NsN.xlsx</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-xs font-bold">
+                  {matchedResults.length} dòng
+                </span>
+              </button>
+            </div>
+
             {/* Summary & Duplicate Warning Banner */}
             <DuplicateWarningBanner
               summary={summary}
