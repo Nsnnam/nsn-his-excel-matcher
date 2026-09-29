@@ -37,11 +37,11 @@ export interface BiaRecord {
 }
 
 export type MatchStatus =
-  | 'exact_single'       // Khớp duy nhất 1-1
-  | 'warning_resolved'   // Trùng tên & giới tính nhưng đã đối soát thành công qua Ngày sinh / CCCD / SĐT
-  | 'warning_conflict'   // Cùng tên tuổi / Trùng lặp hoàn toàn cần người dùng xác nhận
-  | 'unmatched_bia'      // Có trong Bìa nhưng chưa tìm thấy trên HIS
-  | 'manual_adjusted';   // Người dùng đã chỉnh sửa thủ công
+  | 'exact_single'           // Khớp chuẩn 1-1 (duy nhất hoặc cùng tên nhưng khác ngày sinh/tuổi)
+  | 'warning_same_dob'       // CẢNH BÁO: CÙNG HỌ TÊN VÀ CÙNG NGÀY SINH / TUỔI
+  | 'warning_dob_mismatch'   // Cùng họ tên nhưng lệch ngày sinh
+  | 'unmatched_bia'          // Có trong Bìa nhưng chưa tìm thấy trên HIS
+  | 'manual_adjusted';       // Người dùng đã chỉnh sửa thủ công
 
 export interface MatchedRecord {
   id: string;
@@ -69,9 +69,9 @@ export interface ProcessingSummary {
   totalBia: number;
   totalHis: number;
   matchedCount: number;
-  exactSingleCount: number;
-  warningResolvedCount: number;
-  warningConflictCount: number;
+  exactCount: number;
+  warningSameDobCount: number;
+  warningMismatchDobCount: number;
   unmatchedBiaCount: number;
   unmatchedHisCount: number;
   unmatchedHisList: HisRecord[];

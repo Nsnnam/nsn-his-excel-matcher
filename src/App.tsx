@@ -139,9 +139,9 @@ export const App: React.FC = () => {
         setMatchedResults(results);
         setSummary(sum);
 
-        // If there are duplicate warnings, switch directly to warning filter to prompt review
-        if (sum.warningConflictCount > 0 || sum.warningResolvedCount > 0) {
-          setActiveFilter('all');
+        // If there are duplicate warnings (same name AND same dob), switch to warning filter
+        if (sum.warningSameDobCount > 0 || sum.warningMismatchDobCount > 0) {
+          setActiveFilter('warning');
         } else {
           setActiveFilter('all');
         }

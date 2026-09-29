@@ -344,7 +344,32 @@ export function parseBiaRows(rows: string[][]): BiaRecord[] {
 }
 
 /**
- * Match Bia records with HIS records based on Name & Gender, with smart Disambiguation
+ * Extract 4-digit birth year from date string
+ */
+export function extractBirthYear(dobStr: string): number | null {
+  if (!dobStr) return null;
+  const match = dobStr.match(/\b(19\d{2}|20\d{2})\b/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
+ * Compare two DOB strings: true if identical date string or same birth year / age
+ */
+export function isSameDobOrAge(dob1: string, dob2: string): boolean {
+  if (!dob1 || !dob2) return false;
+  const d1 = dob1.trim();
+  const d2 = dob2.trim();
+  if (d1 === d2) return true;
+  const y1 = extractBirthYear(d1);
+  const y2 = extractBirthYear(d2);
+  if (y1 && y2 && y1 === y2) return true;
+  return false;
+}
+
+/**
+ * Match Bia records with HIS records based on Name, Gender, and DOB/Age
+ * Rule: Cùng họ tên nhưng KHÁC ngày sinh/tuổi là 2 người khác nhau -> khớp chuẩn, bỏ qua cảnh báo.
+ * Chỉ cảnh báo đối với trường hợp CÙNG HỌ TÊN VÀ CÙNG NGÀY THÁNG NĂM SINH (trùng lặp thực sự).
  */
 export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): {
   matchedResults: MatchedRecord[];
@@ -362,9 +387,9 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
     hisMap.set(key, list);
   }
 
-  let exactSingleCount = 0;
-  let warningResolvedCount = 0;
-  let warningConflictCount = 0;
+  let exactCount = 0;
+  let warningSameDobCount = 0;
+  let warningMismatchDobCount = 0;
   let unmatchedBiaCount = 0;
 
   for (const bia of biaRecords) {
@@ -378,63 +403,77 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
     // Prioritize Địa chỉ: prefer ĐC 2Cấp, fallback to ĐC chi tiết
     const finalAddress = bia.diaChi2Cap || bia.diaChiChiTiet;
 
-    if (candidates.length === 1) {
-      matchedHis = candidates[0];
-      usedHisIds.add(matchedHis.id);
-      matchStatus = 'exact_single';
-      exactSingleCount++;
-    } else if (candidates.length > 1) {
-      // Multiple candidates with same Name & Gender -> SMART DISAMBIGUATION
-      // Step A: Compare Ngày sinh (exact DD/MM/YYYY or birth year)
-      let matchedByDob = candidates.filter(c => {
-        if (c.normalizedDob && bia.normalizedDob) {
-          if (c.normalizedDob === bia.normalizedDob) return true;
-          // Compare birth year
-          const y1 = c.normalizedDob.match(/\b(19\d{2}|20\d{2})\b/)?.[1];
-          const y2 = bia.normalizedDob.match(/\b(19\d{2}|20\d{2})\b/)?.[1];
-          if (y1 && y2 && y1 === y2) return true;
-        }
-        return false;
-      });
-
-      // Step B: Compare CCCD or Phone if available
-      let matchedByCccdOrPhone = candidates.filter(c => {
-        if (c.cccd && bia.cccd && c.cccd === bia.cccd) return true;
-        if (c.sdt && bia.sdt && c.sdt === bia.sdt) return true;
-        return false;
-      });
-
-      let chosenCandidate: HisRecord | null = null;
-
-      if (matchedByCccdOrPhone.length === 1) {
-        chosenCandidate = matchedByCccdOrPhone[0];
-        warningNotes.push(`Cùng tên & giới tính — Đã tự động đối soát chính xác theo CCCD/SĐT (${chosenCandidate.cccd || chosenCandidate.sdt})`);
-      } else if (matchedByDob.length === 1) {
-        chosenCandidate = matchedByDob[0];
-        warningNotes.push(`Cùng tên & giới tính — Đã tự động đối soát chính xác theo Ngày sinh (${chosenCandidate.ngaySinh})`);
-      }
-
-      if (chosenCandidate) {
-        matchedHis = chosenCandidate;
-        usedHisIds.add(matchedHis.id);
-        matchStatus = 'warning_resolved';
-        warningResolvedCount++;
-      } else {
-        // Could not disambiguate automatically (e.g. identical birth dates or multiple candidates left)
-        // Pick first unused candidate as provisional, but flag prominently
-        const unusedCandidates = candidates.filter(c => !usedHisIds.has(c.id));
-        matchedHis = unusedCandidates[0] || candidates[0];
-        if (matchedHis) usedHisIds.add(matchedHis.id);
-
-        matchStatus = 'warning_conflict';
-        warningNotes.push(`⚠️ CẢNH BÁO TRÙNG TÊN: Có ${candidates.length} người cùng tên và giới tính trên HIS. Vui lòng kiểm tra và hiệu chỉnh hồ sơ tương ứng.`);
-        warningConflictCount++;
-      }
-    } else {
-      // 0 candidates
+    if (candidates.length === 0) {
+      // 0 candidates on HIS
       matchStatus = 'unmatched_bia';
       warningNotes.push('❌ Không tìm thấy hồ sơ tương ứng trên HIS (Chỉ có trong danh sách Bìa).');
       unmatchedBiaCount++;
+    } else if (candidates.length === 1) {
+      // Exactly 1 candidate on HIS
+      const cand = candidates[0];
+      if (cand.normalizedDob && bia.normalizedDob) {
+        if (isSameDobOrAge(cand.normalizedDob, bia.normalizedDob)) {
+          matchedHis = cand;
+          usedHisIds.add(matchedHis.id);
+          matchStatus = 'exact_single';
+          exactCount++;
+        } else {
+          matchedHis = cand;
+          usedHisIds.add(matchedHis.id);
+          matchStatus = 'warning_dob_mismatch';
+          warningNotes.push(`Khớp họ tên nhưng khác ngày sinh/tuổi (Bìa: ${bia.ns}, HIS: ${cand.ngaySinh})`);
+          warningMismatchDobCount++;
+        }
+      } else {
+        matchedHis = cand;
+        usedHisIds.add(matchedHis.id);
+        matchStatus = 'exact_single';
+        exactCount++;
+      }
+    } else {
+      // Multiple candidates with same Name & Gender on HIS!
+      // Compare Ngày sinh / Tuổi
+      const sameDobCandidates = candidates.filter((c) =>
+        isSameDobOrAge(c.normalizedDob, bia.normalizedDob)
+      );
+
+      if (sameDobCandidates.length === 1) {
+        // EXACTLY 1 candidate has this DOB/Age, other candidates have different DOBs
+        // => Cùng tên nhưng khác ngày sinh là 2 người khác nhau, KHỚP CHUẨN, BỎ QUA CẢNH BÁO!
+        matchedHis = sameDobCandidates[0];
+        usedHisIds.add(matchedHis.id);
+        matchStatus = 'exact_single';
+        exactCount++;
+      } else if (sameDobCandidates.length > 1) {
+        // CÙNG HỌ TÊN VÀ CÙNG NGÀY THÁNG NĂM SINH / TUỔI!
+        // Đây mới chính là trường hợp thực sự trùng lặp cần cảnh báo để kiểm tra!
+        let matchedByCccdOrPhone = sameDobCandidates.filter((c) => {
+          if (c.cccd && bia.cccd && c.cccd === bia.cccd) return true;
+          if (c.sdt && bia.sdt && c.sdt === bia.sdt) return true;
+          return false;
+        });
+
+        if (matchedByCccdOrPhone.length === 1) {
+          matchedHis = matchedByCccdOrPhone[0];
+          usedHisIds.add(matchedHis.id);
+          warningNotes.push(`⚠️ CẢNH BÁO: Có ${sameDobCandidates.length} người CÙNG TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS (Đã tạm ghép theo CCCD/SĐT). Vui lòng kiểm tra lại!`);
+        } else {
+          const unused = sameDobCandidates.filter((c) => !usedHisIds.has(c.id));
+          matchedHis = unused[0] || sameDobCandidates[0];
+          if (matchedHis) usedHisIds.add(matchedHis.id);
+          warningNotes.push(`🚨 CẢNH BÁO TRÙNG LẶP: Có ${sameDobCandidates.length} người CÙNG HỌ TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS. Vui lòng nhấp Hiệu chỉnh để xác nhận!`);
+        }
+        matchStatus = 'warning_same_dob';
+        warningSameDobCount++;
+      } else {
+        // Multiple candidates with same name, but none matches DOB
+        const unused = candidates.filter((c) => !usedHisIds.has(c.id));
+        matchedHis = unused[0] || candidates[0];
+        if (matchedHis) usedHisIds.add(matchedHis.id);
+        matchStatus = 'warning_dob_mismatch';
+        warningNotes.push(`⚠️ Có ${candidates.length} người cùng tên trên HIS nhưng không khớp ngày sinh (${bia.ns}). Vui lòng kiểm tra và hiệu chỉnh.`);
+        warningMismatchDobCount++;
+      }
     }
 
     matchedResults.push({
@@ -459,15 +498,15 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
   }
 
   // Find unmatched HIS records
-  const unmatchedHisList = hisRecords.filter(h => !usedHisIds.has(h.id));
+  const unmatchedHisList = hisRecords.filter((h) => !usedHisIds.has(h.id));
 
   const summary: ProcessingSummary = {
     totalBia: biaRecords.length,
     totalHis: hisRecords.length,
-    matchedCount: exactSingleCount + warningResolvedCount,
-    exactSingleCount,
-    warningResolvedCount,
-    warningConflictCount,
+    matchedCount: exactCount + warningSameDobCount + warningMismatchDobCount,
+    exactCount,
+    warningSameDobCount,
+    warningMismatchDobCount,
     unmatchedBiaCount,
     unmatchedHisCount: unmatchedHisList.length,
     unmatchedHisList,

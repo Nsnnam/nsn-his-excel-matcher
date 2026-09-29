@@ -24,7 +24,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   const filteredRecords = records.filter((r) => {
     // Status filter
     if (activeFilter === 'warning') {
-      if (r.matchStatus !== 'warning_resolved' && r.matchStatus !== 'warning_conflict') return false;
+      if (r.matchStatus !== 'warning_same_dob' && r.matchStatus !== 'warning_dob_mismatch') return false;
     } else if (activeFilter === 'exact') {
       if (r.matchStatus !== 'exact_single') return false;
     } else if (activeFilter === 'unmatched_bia') {
@@ -168,14 +168,14 @@ export const DataTable: React.FC<DataTableProps> = ({
                 </tr>
               ) : (
                 filteredRecords.map((r, idx) => {
-                  const isConflict = r.matchStatus === 'warning_conflict';
-                  const isResolved = r.matchStatus === 'warning_resolved';
+                  const isSameDobWarning = r.matchStatus === 'warning_same_dob';
+                  const isDobMismatch = r.matchStatus === 'warning_dob_mismatch';
                   const isUnmatched = r.matchStatus === 'unmatched_bia';
                   const isAdjusted = r.matchStatus === 'manual_adjusted';
 
                   let rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40';
-                  if (isConflict) rowBg = 'bg-amber-100/40 hover:bg-amber-100/70';
-                  else if (isResolved) rowBg = 'bg-amber-50/50 hover:bg-amber-100/50';
+                  if (isSameDobWarning) rowBg = 'bg-amber-100/50 hover:bg-amber-100/80';
+                  else if (isDobMismatch) rowBg = 'bg-amber-50/50 hover:bg-amber-100/50';
                   else if (isUnmatched) rowBg = 'bg-rose-50/40 hover:bg-rose-100/50';
                   else if (isAdjusted) rowBg = 'bg-sky-50/40 hover:bg-sky-100/50';
                   else rowBg += ' hover:bg-sky-50/30';
@@ -201,7 +201,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                       <td className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200">
                         <div className="flex items-center gap-1.5">
                           <span>{r.tenBenhNhan}</span>
-                          {(isConflict || isResolved) && (
+                          {(isSameDobWarning || isDobMismatch) && (
                             <span
                               title={r.warningNotes.join(' - ')}
                               className="inline-flex text-amber-600"
@@ -267,13 +267,13 @@ export const DataTable: React.FC<DataTableProps> = ({
                       {/* Trạng thái & Thao tác */}
                       <td className="px-3 py-2.5 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          {isConflict ? (
+                          {isSameDobWarning ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-300">
-                              ⚠️ Trùng tên tuổi
+                              ⚠️ Cùng tên & ngày sinh
                             </span>
-                          ) : isResolved ? (
+                          ) : isDobMismatch ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200" title={r.warningNotes.join('; ')}>
-                              ✓ Đã khớp theo NS
+                              ⚠️ Lệch ngày sinh
                             </span>
                           ) : isUnmatched ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800">
@@ -296,7 +296,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                             className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:text-sky-800 hover:underline pt-0.5 cursor-pointer"
                           >
                             <Edit3 className="w-3 h-3" />
-                            <span>{isConflict || isResolved ? 'Hiệu chỉnh' : 'Đổi hồ sơ'}</span>
+                            <span>{isSameDobWarning || isDobMismatch ? 'Hiệu chỉnh' : 'Đổi hồ sơ'}</span>
                           </button>
                         </div>
                       </td>

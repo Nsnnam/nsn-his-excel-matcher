@@ -1,6 +1,6 @@
 {
   "name": "nsn-his-excel-matcher",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "description": "Ứng dụng ghép & chuẩn hóa dữ liệu khám sức khỏe từ VNPT-HIS và Danh sách Bìa sang File Mẫu Chuẩn NSN (Hỗ trợ cảnh báo trùng tên tuổi & Offline 100%)",

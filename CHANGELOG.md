@@ -4,6 +4,16 @@ Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa
 
 ---
 
+## [1.0.1] - 2026-09-29
+
+### Cải tiến (Changed)
+- **Tối ưu hóa cơ chế đối soát Ngày sinh & Tuổi:**
+  - Cùng họ tên nhưng **khác ngày tháng năm sinh** (khác tuổi) được xác định là 2 cá nhân khác nhau và tự động xếp vào danh sách **Khớp chuẩn 1-1**, bỏ qua cảnh báo để không làm phiền người dùng.
+  - Hệ thống **chỉ cảnh báo** đối với trường hợp trùng lặp thực sự: **Cùng họ tên VÀ Cùng ngày tháng năm sinh / cùng tuổi**.
+  - Cập nhật banner thông báo hiển thị trạng thái tích cực "0 Cảnh báo" khi toàn bộ hồ sơ đã được ghép chuẩn xác.
+
+---
+
 ## [1.0.0] - 2026-09-29
 
 ### Tính năng mới (Added)
