@@ -205,6 +205,7 @@ export const App: React.FC = () => {
             ngaySinh: selectedHis.ngaySinh,
             tuoi: selectedHis.tuoi,
             gioiTinh: selectedHis.gioiTinh,
+            tenCty: r.tenCty || selectedHis.noiLamViec || '',
             matchedHis: selectedHis,
             matchStatus: 'manual_adjusted',
             warningNotes: [`Người dùng đã chọn thủ công: Mã BA ${selectedHis.maBA} - Mã BN ${selectedHis.maBN}`],

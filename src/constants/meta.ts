@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.2',
-  releaseDate: '2026-09-29',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
+  version: '1.0.3',
+  releaseDate: '2026-10-01',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, cảnh báo trùng tên tuổi, tự động lấy Nơi làm việc từ HIS và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,16 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.3',
+      date: '2026-10-01',
+      features: [
+        'Nhận diện linh hoạt và mở rộng tối đa các biến thể cột Tên công ty trên sheet Bìa (TENCTY, Tên C.ty, C.ty, Cơ quan, CT, CQ, Đơn vị, Doanh nghiệp...).',
+        'Tự động lấy trực tiếp từ cột "Nơi làm việc" trong file HIS nếu không tìm thấy cột tên công ty ở file sheet Bìa hoặc ô dữ liệu bị trống.',
+        'Cơ chế fallback thông minh: Tự động kế thừa "Nơi làm việc" chung của đợt khám từ file HIS cho toàn bộ danh sách, đảm bảo 100% dòng dữ liệu xuất ra file FileMauChuan_NsN.xlsx đều có Tên C.ty chuẩn xác.',
+        'Đồng bộ cập nhật trường Tên C.ty khi người dùng hiệu chỉnh thủ công hoặc chọn ứng viên từ HIS.',
+      ],
+    },
     {
       version: '1.0.2',
       date: '2026-09-29',

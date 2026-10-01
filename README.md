@@ -1,16 +1,16 @@
 # Ghép & Chuẩn Hóa Dữ Liệu KSK HIS — Mẫu Chuẩn NSN
 
-Ứng dụng web tự động đối soát và ghép dữ liệu khám sức khỏe định kỳ từ hệ thống VNPT-HIS với Danh sách hồ sơ KSK (Sheet Bìa) của cơ quan, nhà máy sang File Mẫu Chuẩn NSN. Tích hợp hệ thống khóa bảo mật chuẩn NSN, thuật toán nhận diện và cảnh báo trùng tên tuổi, hỗ trợ hiệu chỉnh thủ công và xuất Excel định dạng General Text 100% không mất số 0 ở đầu SĐT. Cố định tên file xuất phục vụ trực tiếp cho phần mềm in tem BarTender (`.btw`) và Word Mail Merge. Hoạt động offline 100% trên trình duyệt.
+Ứng dụng web tự động đối soát và ghép dữ liệu khám sức khỏe định kỳ từ hệ thống VNPT-HIS với Danh sách hồ sơ KSK (Sheet Bìa) của cơ quan, nhà máy sang File Mẫu Chuẩn NSN. Tích hợp hệ thống khóa bảo mật chuẩn NSN, thuật toán nhận diện và cảnh báo trùng tên tuổi, tự động nhận diện và fallback tên công ty từ "Nơi làm việc" trên HIS, hỗ trợ hiệu chỉnh thủ công và xuất Excel định dạng General Text 100% không mất số 0 ở đầu SĐT. Cố định tên file xuất phục vụ trực tiếp cho phần mềm in tem BarTender (`.btw`) và Word Mail Merge. Hoạt động offline 100% trên trình duyệt.
 
 | Thông tin | Giá trị chuẩn |
 |---|---|
-| **Phiên bản** | `1.0.2` (Mới nhất) |
-| **Ngày phát hành** | 2026-09-29 |
+| **Phiên bản** | `1.0.3` (Mới nhất) |
+| **Ngày phát hành** | 2026-10-01 |
 | **Tác giả** | [Nguyễn Sơn Nam (Nsnnam / NamNS)](https://github.com/Nsnnam) |
 | **Múi giờ** | GMT+7 (`Asia/Ho_Chi_Minh`) |
 | **Kho mã nguồn** | [https://github.com/Nsnnam/nsn-his-excel-matcher](https://github.com/Nsnnam/nsn-his-excel-matcher) |
 | **Trang trực tuyến (Live)** | [https://nsnnam.github.io/nsn-his-excel-matcher/](https://nsnnam.github.io/nsn-his-excel-matcher/) |
-| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.2-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
+| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.3-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
 | **Khóa truy cập** | `namns` (Không phân biệt hoa thường) |
 | **Giấy phép** | MIT (Public Open-Source) |
 
@@ -23,29 +23,34 @@
 - Bảo mật chữ ký SHA-256 nội bộ, lưu trạng thái mở khóa vào `localStorage` tiện lợi.
 
 ### 2. Tự động nhận diện 2 File Excel đầu vào
-- **File 1 (HIS):** Đọc trực tiếp file xuất danh sách tiếp nhận từ VNPT-HIS (hỗ trợ cả file `.xls` dạng bảng HTML hay `.xlsx`). Trích xuất chính xác `Mã BA`, `Mã BN`, `Tên bệnh nhân`, `Ngày sinh`, `Tuổi`, `Giới tính`, `CMT/CCCD`, `SĐT`.
-- **File 2 (Danh sách KSK):** Tự động tìm và đọc sheet `Bìa` (hoặc cho phép chọn sheet bất kỳ). Trích xuất `STT`, `Họ và tên (HOVATEN)`, `Giới tính (GT)`, `Bộ phận (NGHENGHIEP)`, `SĐT`, `Tên C.ty (TENCTY)`, `Địa Chỉ (ĐC 2Cấp / ĐC)`.
+- **File 1 (HIS):** Đọc trực tiếp file xuất danh sách tiếp nhận từ VNPT-HIS (hỗ trợ cả file `.xls` dạng bảng HTML hay `.xlsx`). Trích xuất chính xác `Mã BA`, `Mã BN`, `Tên bệnh nhân`, `Ngày sinh`, `Tuổi`, `Giới tính`, `CMT/CCCD`, `SĐT`, `Nơi làm việc`.
+- **File 2 (Danh sách KSK):** Tự động tìm và đọc sheet `Bìa` (hoặc cho phép chọn sheet bất kỳ). Trích xuất `STT`, `Họ và tên (HOVATEN)`, `Giới tính (GT)`, `Bộ phận (NGHENGHIEP)`, `SĐT`, `Tên C.ty`, `Địa Chỉ (ĐC 2Cấp / ĐC)`.
 
-### 3. Thuật toán ghép thông minh & Đối soát Tuổi / Ngày sinh (v1.0.1)
+### 3. Tự động nhận diện Tên công ty & Fallback từ "Nơi làm việc" trên HIS (v1.0.3 MỚI)
+- **Nhận diện đa dạng trên sheet Bìa:** Hệ thống tự động bắt các tiêu đề cột như `TENCTY`, `Tên C.ty`, `C.ty`, `Cơ quan`, `CT`, `CQ`, `Đơn vị`, `Doanh nghiệp`... hoặc tiêu đề công ty ở phần đầu sheet.
+- **Tự động lấy từ "Nơi làm việc" trong HIS:** Nếu file sheet Bìa *không có cột tên công ty* hoặc *ô dữ liệu bị để trống*, hệ thống sẽ tự động lấy trực tiếp từ trường **"Nơi làm việc"** của hồ sơ bệnh nhân tương ứng trên HIS.
+- **Kế thừa toàn đợt khám:** Kể cả trường hợp hồ sơ chưa khớp được trên HIS, ứng dụng vẫn tự động gán tên cơ quan chung của đợt khám từ file HIS để file xuất ra không bao giờ bị khuyết cột *Tên C.ty*.
+
+### 4. Thuật toán ghép thông minh & Đối soát Tuổi / Ngày sinh (v1.0.1)
 - **Ghép cặp Tên & Giới tính:** Chuẩn hóa khoảng trắng đầu cuối, xóa ký tự ẩn, chuyển Unicode NFC.
 - **Cùng tên nhưng khác ngày sinh / tuổi:** Được xác định chắc chắn là 2 cá nhân khác nhau, tự động xếp vào nhóm **Khớp chuẩn 1-1** và **bỏ qua cảnh báo** để không làm phiền người dùng.
 - **Chỉ cảnh báo khi trùng thực sự:** Khi phát hiện các trường hợp cùng tên VÀ cùng ngày tháng năm sinh trên HIS, hệ thống bật cảnh báo màu vàng <span style="color:#b45309;font-weight:bold;">⚠️ Trùng tên tuổi</span>.
 - **Hiệu chỉnh thủ công 1 chạm:** Cho phép người dùng nhấp xem danh sách ứng viên trên HIS để chọn đúng hồ sơ hoặc nhập bổ sung Mã BA/BN.
 
-### 4. Tối ưu hóa luồng giao diện sau khi ghép (v1.0.2)
+### 5. Tối ưu hóa luồng giao diện sau khi ghép (v1.0.2)
 - **Tự động ẩn khung nạp 2 file đầu vào:** Sau khi ghép dữ liệu hoàn tất, 2 khung nạp file lớn sẽ tự động ẩn đi để nhường toàn bộ không gian màn hình cho Thống kê, Khối xuất Excel nổi bật và Bảng danh sách đối chiếu.
 - **Thanh điều khiển thu gọn:** Bổ sung nút **"Hiện khung nạp file"** để mở lại khi cần và nút **"Xóa DS (Clear Import)"** chuẩn NSN.
 
-### 5. Xuất File Mẫu Chuẩn NSN Cho In Tem BarTender & Mail Merge (v1.0.2)
+### 6. Xuất File Mẫu Chuẩn NSN Cho In Tem BarTender & Mail Merge (v1.0.2)
 - **Cố định tên file xuất:** Luôn xuất ra tên file `FileMauChuan_NsN.xlsx` (bỏ tiền tố timestamp ngày giờ) giúp phần mềm in tem **BarTender (.btw)** và tính năng **Word Mail Merge** tự động nhận diện cơ sở dữ liệu ngay lập tức mà không cần đổi tên thủ công.
 - **Khối biểu ngữ CTA tải file nổi bật:** Bố trí nút tải file siêu lớn, màu sắc bắt mắt ngay trên đầu bảng kết quả.
 - **11 cột tiêu chuẩn:**
   `STT` | `Mã BA` | `Mã BN` | `Tên bệnh nhân` | `Ngày sinh` | `Tuổi` | `Giới tính` | `Bộ phận` | `SĐT` | `Tên C.ty` | `Địa Chỉ`
 - **Định dạng General Text (@):** Toàn bộ 11 cột đều được thiết lập tường minh là kiểu văn bản (`t: 's'`, `z: '@'`), triệt tiêu hoàn toàn lỗi Excel nuốt số 0 ở đầu SĐT (ví dụ `0981...`) hoặc biến SĐT thành số khoa học.
 
-### 6. Hướng dẫn & Lịch sử phiên bản đa điểm chạm
-- Nút **"Hướng dẫn"** và **"Lịch sử (v1.0.2)"** hiển thị rõ ràng trên thanh Navbar và Footer.
-- Huy hiệu phiên bản `v1.0.2` có thể nhấp để mở trực tiếp nhật ký thay đổi qua từng phiên bản.
+### 7. Hướng dẫn & Lịch sử phiên bản đa điểm chạm
+- Nút **"Hướng dẫn"** và **"Lịch sử (v1.0.3)"** hiển thị rõ ràng trên thanh Navbar và Footer.
+- Huy hiệu phiên bản `v1.0.3` có thể nhấp để mở trực tiếp nhật ký thay đổi qua từng phiên bản.
 
 ---
 
@@ -75,6 +80,10 @@ pnpm run build:single
 
 ## Lịch sử phiên bản tóm tắt
 
+- **v1.0.3 (2026-10-01):**
+  - Tự động nhận diện các biến thể tên công ty trên sheet Bìa (`TENCTY`, `Tên C.ty`, `C.ty`, `Cơ quan`, `CT`, `CQ`, `Đơn vị`, `Doanh nghiệp`...).
+  - Tự động fallback lấy trực tiếp từ cột "Nơi làm việc" trong file HIS nếu không tìm thấy tên công ty ở file sheet Bìa.
+  - Tự động kế thừa "Nơi làm việc" chung của đợt khám từ file HIS cho toàn bộ danh sách khi xuất Excel.
 - **v1.0.2 (2026-09-29):**
   - Tự động ẩn khung nạp 2 file sau khi ghép dữ liệu xong, tập trung màn hình vào Thống kê, Khối xuất Excel nổi bật và Bảng đối chiếu.
   - Cố định tên file xuất ra thành `FileMauChuan_NsN.xlsx` phục vụ trực tiếp phần mềm in tem BarTender (`.btw`) và Word Mail Merge.

@@ -2,6 +2,15 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.3] - 2026-10-01
+
+### Cải tiến (Changed)
+- **Tự động nhận diện Tên công ty & Fallback từ "Nơi làm việc" trên HIS:**
+  - Nhận diện linh hoạt và mở rộng tối đa các biến thể cột Tên công ty trên sheet Bìa (`TENCTY`, `Tên C.ty`, `C.ty`, `Cơ quan`, `CT`, `CQ`, `Đơn vị`, `Doanh nghiệp`...).
+  - Nếu không tìm thấy cột tên công ty ở file sheet Bìa hoặc ô dữ liệu bị để trống, hệ thống tự động lấy trực tiếp từ cột **"Nơi làm việc"** trong file kết xuất HIS.
+  - Cơ chế fallback thông minh: Tự động kế thừa "Nơi làm việc" chung của đợt khám từ file HIS cho toàn bộ danh sách, đảm bảo 100% dòng dữ liệu xuất ra file `FileMauChuan_NsN.xlsx` đều có đầy đủ Tên C.ty chuẩn xác.
+  - Đồng bộ cập nhật trường Tên C.ty khi người dùng hiệu chỉnh thủ công hoặc chọn ứng viên từ HIS.
+
 ---
 
 ## [1.0.2] - 2026-09-29

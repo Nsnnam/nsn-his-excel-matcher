@@ -12,7 +12,8 @@ import {
   Eye,
   FileText,
   Printer,
-  FileCheck
+  FileCheck,
+  Building2
 } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
@@ -54,7 +55,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             <div className="flex items-center space-x-2 text-sky-900">
               <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tối ưu đối soát ngày sinh, ẩn khung nạp và cố định tên file BarTender.
+                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động lấy "Nơi làm việc" từ HIS khi sheet Bìa thiếu tên công ty, cố định tên file BarTender.
               </span>
             </div>
             {onOpenHistory && (
@@ -82,7 +83,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
                   File 1: File Tiếp Nhận Xuất Từ VNPT-HIS
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  Hỗ trợ cả file <code>.xls</code> (bảng HTML do VNPT-HIS kết xuất) và file <code>.xlsx</code>. Hệ thống tự động bóc tách các trường: <em>Mã BA, Mã BN, Tên bệnh nhân, Ngày sinh, Tuổi, Giới tính, CCCD, SĐT</em>.
+                  Hỗ trợ cả file <code>.xls</code> (bảng HTML do VNPT-HIS kết xuất) và file <code>.xlsx</code>. Hệ thống tự động trích xuất: <em>Mã BA, Mã BN, Tên bệnh nhân, Ngày sinh, Tuổi, Giới tính, CCCD, SĐT, Nơi làm việc</em>.
                 </p>
               </div>
 
@@ -98,10 +99,37 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 2: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
+          {/* Section 2: Nhận diện Tên công ty & Fallback từ HIS (v1.0.3 MỚI) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
+              Nhận Diện Tên Công Ty & Tự Động Lấy Từ "Nơi Làm Việc" HIS (v1.0.3)
+            </h4>
+            <div className="pl-6 space-y-2">
+              <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg">
+                <div className="font-bold text-indigo-900 flex items-center gap-1.5 mb-1">
+                  <Building2 className="w-4 h-4 text-indigo-600" />
+                  Cơ chế tự động lấy Tên Công Ty linh hoạt:
+                </div>
+                <ul className="space-y-1 text-[11px] text-indigo-800 list-disc list-inside">
+                  <li>
+                    <strong>Nhận diện đa dạng trên sheet Bìa:</strong> Hệ thống tự động bắt các tiêu đề cột như <code>TENCTY</code>, <code>Tên C.ty</code>, <code>C.ty</code>, <code>Cơ quan</code>, <code>CT</code>, <code>CQ</code>, <code>Đơn vị</code>, <code>Doanh nghiệp</code>...
+                  </li>
+                  <li>
+                    <strong>Tự động lấy từ "Nơi làm việc" trong HIS:</strong> Nếu file sheet Bìa <em>không có cột tên công ty</em> hoặc <em>ô dữ liệu bị để trống</em>, hệ thống sẽ tự động lấy trực tiếp từ trường <strong>"Nơi làm việc"</strong> của hồ sơ bệnh nhân trên HIS!
+                  </li>
+                  <li>
+                    <strong>Kế thừa đợt khám:</strong> Ngay cả với hồ sơ có trong Bìa nhưng chưa tìm thấy trên HIS, ứng dụng vẫn tự động gán tên cơ quan chung của đợt khám từ file HIS để file xuất ra không bao giờ bị khuyết cột <em>Tên C.ty</em>.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
               Quy Tắc Đối Soát Ngày Sinh / Tuổi & Cảnh Báo Trùng Tên (v1.0.1)
             </h4>
             <div className="pl-6 space-y-2">
@@ -133,10 +161,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 3: Tối ưu hiển thị sau ghép */}
+          {/* Section 4: Tối ưu hiển thị sau ghép */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
               Giao Diện Tối Ưu Sau Khi Ghép & Khung Nạp File (v1.0.2)
             </h4>
             <div className="pl-6 space-y-1.5">
@@ -152,10 +180,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 4: Xuất File Mẫu Chuẩn NSN */}
+          {/* Section 5: Xuất File Mẫu Chuẩn NSN */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">5</span>
               Xuất File Mẫu Chuẩn Cho In Tem Nhãn (BarTender & Mail Merge)
             </h4>
             <div className="pl-6 space-y-2">
@@ -184,7 +212,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 5: Bảo Mật & Khóa Ứng Dụng */}
+          {/* Section 6: Bảo Mật & Khóa Ứng Dụng */}
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-slate-500">
             <div className="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />

@@ -189,7 +189,13 @@ export function parseHisRows(rows: string[][]): HisRecord[] {
     cccd: headers.findIndex(h => /cccd|cmt|căn\s*cước/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|điện\s*thoại/i.test(h)),
     diaChi: headers.findIndex(h => /đ\/c|địa\s*chỉ|dia\s*chi/i.test(h)),
-    noiLamViec: headers.findIndex(h => /nơi\s*làm\s*việc|công\s*ty|don\s*vi/i.test(h)),
+    noiLamViec: headers.findIndex(h => {
+      const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (['noilamviec', 'noilv', 'congty', 'tencongty', 'coquan', 'tencoquan', 'donvi', 'tendonvi', 'doanhnghiep', 'cty', 'tencty'].includes(clean)) {
+        return true;
+      }
+      return /nơi\s*làm\s*việc|noi\s*lam\s*viec|nơi\s*lv|công\s*ty|cong\s*ty|cơ\s*quan|co\s*quan|đơn\s*vị|don\s*vi|doanh\s*nghiệp|c\.?ty/i.test(h);
+    }),
     ngayTiepNhan: headers.findIndex(h => /tiếp\s*nhận/i.test(h)),
   };
 
@@ -284,9 +290,29 @@ export function parseBiaRows(rows: string[][]): BiaRecord[] {
     boPhan: headers.findIndex(h => /bộ\s*phận|^bp$|phòng\s*ban/i.test(h)),
     ngheNghiep: headers.findIndex(h => /nghề\s*nghiệp|nghenghiep|chức\s*vụ|vị\s*trí/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|số\s*điện\s*thoại|điện\s*thoại/i.test(h)),
-    tenCty: headers.findIndex(h => /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|doanh\s*nghiệp/i.test(h)),
+    tenCty: headers.findIndex(h => {
+      const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (['tencty', 'cty', 'ct', 'cq', 'cqu', 'congty', 'tencongty', 'coquan', 'tencoquan', 'tencq', 'tenct', 'donvi', 'tendonvi', 'doanhnghiep', 'noilamviec', 'noilv'].includes(clean)) {
+        return true;
+      }
+      return /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|c\.?ty|^cty$|^c\.?t$|^c\.?q$|cơ\s*quan|co\s*quan|tên\s*cơ\s*quan|doanh\s*nghiệp|đơn\s*vị|don\s*vi|nơi\s*làm\s*việc|noi\s*lam\s*viec/i.test(h);
+    }),
     cccd: headers.findIndex(h => /cccd|cmt|số\s*cccd/i.test(h)),
   };
+
+  // Search for company in metadata rows above header if available (e.g. "Công ty: ABC", "Đơn vị: XYZ")
+  let sheetLevelCompany = '';
+  for (let i = 0; i < headerIndex; i++) {
+    for (const cell of rows[i] || []) {
+      const text = normalizeText(cell);
+      const match = text.match(/(?:công\s*ty|c\.?ty|cơ\s*quan|đơn\s*vị|doanh\s*nghiệp)\s*[:：\-]\s*([^\r\n,;]+)/i);
+      if (match && match[1]) {
+        sheetLevelCompany = normalizeText(match[1]);
+        break;
+      }
+    }
+    if (sheetLevelCompany) break;
+  }
 
   const records: BiaRecord[] = [];
   for (let i = headerIndex + 1; i < rows.length; i++) {
@@ -310,7 +336,8 @@ export function parseBiaRows(rows: string[][]): BiaRecord[] {
 
     const ngheNghiep = colMap.ngheNghiep !== -1 ? normalizeText(row[colMap.ngheNghiep]) : '';
     const sdt = normalizePhone(colMap.sdt !== -1 ? row[colMap.sdt] : '');
-    const tenCty = colMap.tenCty !== -1 ? normalizeText(row[colMap.tenCty]) : '';
+    const rawTenCty = colMap.tenCty !== -1 ? normalizeText(row[colMap.tenCty]) : '';
+    const tenCty = rawTenCty || sheetLevelCompany;
     const cccd = colMap.cccd !== -1 ? normalizeText(row[colMap.cccd]) : '';
 
     if (!hoVaTen && !stt) continue;
@@ -380,11 +407,30 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
 
   // Group HIS by (normalizedName, normalizedGender)
   const hisMap = new Map<string, HisRecord[]>();
+  // Also collect common "Nơi làm việc" from HIS as fallback
+  let hisDefaultCompany = '';
+  const hisCompanyCounts = new Map<string, number>();
+
   for (const h of hisRecords) {
     const key = `${h.normalizedName}|${h.normalizedGender}`;
     const list = hisMap.get(key) || [];
     list.push(h);
     hisMap.set(key, list);
+
+    const comp = normalizeText(h.noiLamViec);
+    if (comp) {
+      hisCompanyCounts.set(comp, (hisCompanyCounts.get(comp) || 0) + 1);
+    }
+  }
+
+  if (hisCompanyCounts.size > 0) {
+    let maxCount = 0;
+    for (const [comp, cnt] of hisCompanyCounts.entries()) {
+      if (cnt > maxCount) {
+        maxCount = cnt;
+        hisDefaultCompany = comp;
+      }
+    }
   }
 
   let exactCount = 0;
@@ -476,6 +522,19 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
       }
     }
 
+    // Xác định Tên công ty:
+    // 1. Ưu tiên lấy từ file sheet Bìa (cột Tên Cty, C.ty, Cơ quan, CT, CQ...)
+    // 2. Nếu không tìm thấy ở Bìa hoặc ô trống, lấy trực tiếp từ "Nơi làm việc" của hồ sơ HIS tương ứng (matchedHis.noiLamViec)
+    // 3. Nếu chưa khớp được trên HIS, lấy giá trị "Nơi làm việc" mặc định của cả đợt khám trên HIS
+    let finalCompany = normalizeText(bia.tenCty);
+    if (!finalCompany) {
+      if (matchedHis && normalizeText(matchedHis.noiLamViec)) {
+        finalCompany = normalizeText(matchedHis.noiLamViec);
+      } else if (hisDefaultCompany) {
+        finalCompany = hisDefaultCompany;
+      }
+    }
+
     matchedResults.push({
       id: `match_${bia.id}`,
       stt: String(bia.stt),
@@ -487,7 +546,7 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
       gioiTinh: matchedHis ? matchedHis.gioiTinh : bia.gt,
       boPhan: bia.boPhan,
       sdt: bia.sdt,
-      tenCty: bia.tenCty,
+      tenCty: finalCompany,
       diaChi: finalAddress,
       matchStatus,
       warningNotes,
