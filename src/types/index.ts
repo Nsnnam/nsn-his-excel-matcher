@@ -95,3 +95,17 @@ export interface ColumnMappingConfig {
   hisColAge?: string;
   hisColGender?: string;
 }
+
+export interface UploadedFileItem {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  recordCount: number;
+  uploadedAt: Date;
+  selectedSheet?: string;
+  availableSheets?: string[];
+  rawRowsBySheet?: Record<string, string[][]>;
+  parsedHisRecords?: HisRecord[];
+  parsedBiaRecords?: BiaRecord[];
+}

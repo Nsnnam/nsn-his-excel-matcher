@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.3',
-  releaseDate: '2026-10-01',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, cảnh báo trùng tên tuổi, tự động lấy Nơi làm việc từ HIS và xuất Excel chuẩn General Text.',
+  version: '1.0.4',
+  releaseDate: '2026-10-04',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, hỗ trợ nạp nhiều file / nạp dồn / thay thế trực tiếp tại giao diện nạp và kết quả, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,17 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.4',
+      date: '2026-10-04',
+      features: [
+        'Hỗ trợ nạp dồn nhiều file cùng lúc cho cả File 1 (HIS .xls/.xlsx) và File 2 (Danh sách Bìa .xlsx/.xls) qua nút "+ Thêm file" hoặc kéo thả nhiều file.',
+        'Hỗ trợ cơ chế thay thế trực tiếp: Thay thế toàn bộ danh sách file hoặc thay thế từng file đơn lẻ bằng nút "🔄 Thay" ngay trên danh sách nạp.',
+        'Tự động đối soát và cho phép chọn sheet độc lập cho từng file Bìa khi import nhiều file khác nhau.',
+        'Thanh quản lý file tương tác trực tiếp ngay tại màn hình kết quả đối soát (ResultsFileManagerBar): Cho phép thêm mới, thay thế hoặc xóa file mà không cần quay lại màn hình ban đầu.',
+        'Cơ chế re-matching tự động tức thì: Ngay khi thêm, thay thế hoặc xóa file ở màn hình kết quả, hệ thống tự động đối soát lại toàn bộ dữ liệu ngay lập tức.',
+      ],
+    },
     {
       version: '1.0.3',
       date: '2026-10-01',

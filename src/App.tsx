@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ACCESS_AUTH_HASH,
   ACCESS_AUTH_KEY,
@@ -6,6 +6,7 @@ import {
 } from './components/LockScreenModal';
 import { Navbar } from './components/Navbar';
 import { FileUploadSection } from './components/FileUploadSection';
+import { ResultsFileManagerBar } from './components/ResultsFileManagerBar';
 import { DuplicateWarningBanner } from './components/DuplicateWarningBanner';
 import { DataTable } from './components/DataTable';
 import { DisambiguationModal } from './components/DisambiguationModal';
@@ -17,16 +18,19 @@ import {
   HisRecord,
   MatchedRecord,
   ProcessingSummary,
+  UploadedFileItem,
 } from './types';
 import {
   readExcelFileToRows,
   parseHisRows,
   parseBiaRows,
+  combineHisRecords,
+  combineBiaRecords,
   matchRecords,
   calculateAge,
   exportToStandardExcel,
 } from './services/dataEngine';
-import { Download, UploadCloud, Trash2, FileCheck, Layers } from 'lucide-react';
+import { Download } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Authentication State
@@ -45,16 +49,13 @@ export const App: React.FC = () => {
     setIsAboutOpen(true);
   };
 
-  // File 1: HIS
-  const [hisFile, setHisFile] = useState<File | null>(null);
-  const [hisRecords, setHisRecords] = useState<HisRecord[]>([]);
+  // Uploaded Files State (Supports multiple files and direct replacement)
+  const [hisFiles, setHisFiles] = useState<UploadedFileItem[]>([]);
+  const [biaFiles, setBiaFiles] = useState<UploadedFileItem[]>([]);
 
-  // File 2: Bia
-  const [biaFile, setBiaFile] = useState<File | null>(null);
-  const [availableSheets, setAvailableSheets] = useState<string[]>([]);
-  const [selectedSheet, setSelectedSheet] = useState<string>('');
-  const [biaRowsBySheet, setBiaRowsBySheet] = useState<Record<string, string[][]>>({});
-  const [biaRecords, setBiaRecords] = useState<BiaRecord[]>([]);
+  // Combined records (memoized for performance)
+  const combinedHisRecords = useMemo(() => combineHisRecords(hisFiles), [hisFiles]);
+  const combinedBiaRecords = useMemo(() => combineBiaRecords(biaFiles), [biaFiles]);
 
   // Processing & Results
   const [isProcessing, setIsProcessing] = useState(false);
@@ -62,7 +63,7 @@ export const App: React.FC = () => {
   const [summary, setSummary] = useState<ProcessingSummary | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'warning' | 'exact' | 'unmatched_bia' | 'unmatched_his'>('all');
 
-  // UI state: hide upload section after matching is done to focus on results & export
+  // UI state: hide full upload section after matching is done to focus on results & export
   const [isUploadVisible, setIsUploadVisible] = useState(true);
 
   // Handle Lock App
@@ -71,113 +72,281 @@ export const App: React.FC = () => {
     setIsUnlocked(false);
   };
 
-  // Handle File 1 (HIS) Upload
-  const handleHisFileChange = async (file: File | null) => {
-    if (!file) {
-      setHisFile(null);
-      setHisRecords([]);
+  // Helper: Parse a single HIS File to UploadedFileItem
+  const parseSingleHisFile = async (file: File, fileIndex: number): Promise<UploadedFileItem> => {
+    const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
+    const firstSheet = sheetNames[0] || '';
+    const rows = rowsBySheet[firstSheet] || [];
+    const filePrefix = `his_${Date.now()}_${fileIndex}`;
+    const parsed = parseHisRows(rows, filePrefix);
+    return {
+      id: `his_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      file,
+      name: file.name,
+      size: file.size,
+      recordCount: parsed.length,
+      uploadedAt: new Date(),
+      availableSheets: sheetNames,
+      selectedSheet: firstSheet,
+      rawRowsBySheet: rowsBySheet,
+      parsedHisRecords: parsed,
+    };
+  };
+
+  // Helper: Parse a single Bia File to UploadedFileItem
+  const parseSingleBiaFile = async (file: File, fileIndex: number): Promise<UploadedFileItem> => {
+    const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
+    const foundBia = sheetNames.find(s => s.toLowerCase() === 'bìa' || s.toLowerCase() === 'bia');
+    const targetSheet = foundBia || sheetNames[0] || '';
+    const rows = rowsBySheet[targetSheet] || [];
+    const filePrefix = `bia_${Date.now()}_${fileIndex}`;
+    const parsed = parseBiaRows(rows, filePrefix);
+    return {
+      id: `bia_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      file,
+      name: file.name,
+      size: file.size,
+      recordCount: parsed.length,
+      uploadedAt: new Date(),
+      availableSheets: sheetNames,
+      selectedSheet: targetSheet,
+      rawRowsBySheet: rowsBySheet,
+      parsedBiaRecords: parsed,
+    };
+  };
+
+  // Core Matching Execution Helper
+  const executeMatching = (bias: BiaRecord[], his: HisRecord[], shouldHideUpload = false) => {
+    if (bias.length === 0 || his.length === 0) {
+      setMatchedResults([]);
+      setSummary(null);
+      setIsUploadVisible(true);
       return;
     }
-    setHisFile(file);
+
     try {
-      const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
-      const firstSheet = sheetNames[0] || '';
-      const rows = rowsBySheet[firstSheet] || [];
-      const parsed = parseHisRows(rows);
-      setHisRecords(parsed);
+      const { matchedResults: results, summary: sum } = matchRecords(bias, his);
+      setMatchedResults(results);
+      setSummary(sum);
+
+      if (shouldHideUpload) {
+        setIsUploadVisible(false);
+      }
+
+      if (sum.warningSameDobCount > 0 || sum.warningMismatchDobCount > 0) {
+        setActiveFilter('warning');
+      } else {
+        setActiveFilter('all');
+      }
     } catch (err) {
-      console.error('Lỗi đọc file HIS:', err);
+      console.error('Lỗi khi ghép dữ liệu:', err);
+      alert('Có lỗi xảy ra trong quá trình đối soát dữ liệu.');
+    }
+  };
+
+  // Handle Add HIS Files (Nạp dồn)
+  const handleAddHisFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const newItems: UploadedFileItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const item = await parseSingleHisFile(files[i], i);
+        newItems.push(item);
+      }
+      const updated = [...hisFiles, ...newItems];
+      setHisFiles(updated);
+
+      if (summary !== null) {
+        const newHis = combineHisRecords(updated);
+        executeMatching(combinedBiaRecords, newHis, false);
+      }
+    } catch (err) {
+      console.error('Lỗi nạp file HIS:', err);
+      alert('Không thể đọc một số file HIS. Vui lòng kiểm tra định dạng file .xls hoặc .xlsx.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle Replace All HIS Files (Thay thế toàn bộ)
+  const handleReplaceHisFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const newItems: UploadedFileItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const item = await parseSingleHisFile(files[i], i);
+        newItems.push(item);
+      }
+      setHisFiles(newItems);
+
+      if (summary !== null) {
+        const newHis = combineHisRecords(newItems);
+        executeMatching(combinedBiaRecords, newHis, false);
+      }
+    } catch (err) {
+      console.error('Lỗi thay thế file HIS:', err);
       alert('Không thể đọc file HIS. Vui lòng kiểm tra định dạng file .xls hoặc .xlsx.');
-      setHisFile(null);
-      setHisRecords([]);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Handle File 2 (Bia) Upload
-  const handleBiaFileChange = async (file: File | null) => {
-    if (!file) {
-      setBiaFile(null);
-      setAvailableSheets([]);
-      setSelectedSheet('');
-      setBiaRowsBySheet({});
-      setBiaRecords([]);
-      return;
-    }
-    setBiaFile(file);
+  // Handle Replace Single HIS File
+  const handleReplaceSingleHisFile = async (fileId: string, newFile: File) => {
+    setIsProcessing(true);
     try {
-      const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
-      setAvailableSheets(sheetNames);
-      setBiaRowsBySheet(rowsBySheet);
+      const newItem = await parseSingleHisFile(newFile, 0);
+      const updated = hisFiles.map(f => (f.id === fileId ? newItem : f));
+      setHisFiles(updated);
 
-      // Prefer sheet "Bìa" or "Bia", otherwise first sheet
-      const foundBia = sheetNames.find(s => s.toLowerCase() === 'bìa' || s.toLowerCase() === 'bia');
-      const targetSheet = foundBia || sheetNames[0] || '';
-      setSelectedSheet(targetSheet);
-
-      const rows = rowsBySheet[targetSheet] || [];
-      const parsed = parseBiaRows(rows);
-      setBiaRecords(parsed);
+      if (summary !== null) {
+        const newHis = combineHisRecords(updated);
+        executeMatching(combinedBiaRecords, newHis, false);
+      }
     } catch (err) {
-      console.error('Lỗi đọc file Danh sách:', err);
-      alert('Không thể đọc file Danh sách. Vui lòng kiểm tra định dạng file .xlsx hoặc .xls.');
-      setBiaFile(null);
-      setAvailableSheets([]);
-      setSelectedSheet('');
-      setBiaRowsBySheet({});
-      setBiaRecords([]);
+      console.error('Lỗi thay thế file HIS đơn lẻ:', err);
+      alert('Không thể đọc file HIS thay thế.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Handle Sheet Change
-  const handleSheetChange = (sheet: string) => {
-    setSelectedSheet(sheet);
-    const rows = biaRowsBySheet[sheet] || [];
-    const parsed = parseBiaRows(rows);
-    setBiaRecords(parsed);
+  // Handle Remove HIS File
+  const handleRemoveHisFile = (fileId: string) => {
+    const updated = hisFiles.filter(f => f.id !== fileId);
+    setHisFiles(updated);
+
+    if (summary !== null) {
+      const newHis = combineHisRecords(updated);
+      executeMatching(combinedBiaRecords, newHis, false);
+    }
+  };
+
+  // Handle Add Bia Files (Nạp dồn)
+  const handleAddBiaFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const newItems: UploadedFileItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const item = await parseSingleBiaFile(files[i], i);
+        newItems.push(item);
+      }
+      const updated = [...biaFiles, ...newItems];
+      setBiaFiles(updated);
+
+      if (summary !== null) {
+        const newBia = combineBiaRecords(updated);
+        executeMatching(newBia, combinedHisRecords, false);
+      }
+    } catch (err) {
+      console.error('Lỗi nạp file Danh sách:', err);
+      alert('Không thể đọc một số file Danh sách. Vui lòng kiểm tra định dạng file .xlsx hoặc .xls.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle Replace All Bia Files (Thay thế toàn bộ)
+  const handleReplaceBiaFiles = async (files: File[]) => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const newItems: UploadedFileItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const item = await parseSingleBiaFile(files[i], i);
+        newItems.push(item);
+      }
+      setBiaFiles(newItems);
+
+      if (summary !== null) {
+        const newBia = combineBiaRecords(newItems);
+        executeMatching(newBia, combinedHisRecords, false);
+      }
+    } catch (err) {
+      console.error('Lỗi thay thế file Danh sách:', err);
+      alert('Không thể đọc file Danh sách. Vui lòng kiểm tra định dạng file .xlsx hoặc .xls.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle Replace Single Bia File
+  const handleReplaceSingleBiaFile = async (fileId: string, newFile: File) => {
+    setIsProcessing(true);
+    try {
+      const newItem = await parseSingleBiaFile(newFile, 0);
+      const updated = biaFiles.map(f => (f.id === fileId ? newItem : f));
+      setBiaFiles(updated);
+
+      if (summary !== null) {
+        const newBia = combineBiaRecords(updated);
+        executeMatching(newBia, combinedHisRecords, false);
+      }
+    } catch (err) {
+      console.error('Lỗi thay thế file Danh sách đơn lẻ:', err);
+      alert('Không thể đọc file Danh sách thay thế.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle Remove Bia File
+  const handleRemoveBiaFile = (fileId: string) => {
+    const updated = biaFiles.filter(f => f.id !== fileId);
+    setBiaFiles(updated);
+
+    if (summary !== null) {
+      const newBia = combineBiaRecords(updated);
+      executeMatching(newBia, combinedHisRecords, false);
+    }
+  };
+
+  // Handle Change Sheet for a specific Bia file
+  const handleChangeBiaSheet = (fileId: string, sheetName: string) => {
+    const updated = biaFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet) {
+        const rows = item.rawRowsBySheet[sheetName] || [];
+        const filePrefix = item.id;
+        const parsed = parseBiaRows(rows, filePrefix);
+        return {
+          ...item,
+          selectedSheet: sheetName,
+          parsedBiaRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setBiaFiles(updated);
+
+    if (summary !== null) {
+      const newBia = combineBiaRecords(updated);
+      executeMatching(newBia, combinedHisRecords, false);
+    }
   };
 
   // Run Matching
   const handleProcess = () => {
-    if (biaRecords.length === 0 || hisRecords.length === 0) {
-      alert('Vui lòng nạp đủ 2 file dữ liệu HIS và Danh sách Bìa!');
+    if (combinedBiaRecords.length === 0 || combinedHisRecords.length === 0) {
+      alert('Vui lòng nạp đủ cả file dữ liệu HIS và file Danh sách Bìa!');
       return;
     }
 
     setIsProcessing(true);
     setTimeout(() => {
-      try {
-        const { matchedResults: results, summary: sum } = matchRecords(biaRecords, hisRecords);
-        setMatchedResults(results);
-        setSummary(sum);
-
-        // Hide upload section to focus on results & export
-        setIsUploadVisible(false);
-
-        // If there are duplicate warnings (same name AND same dob), switch to warning filter
-        if (sum.warningSameDobCount > 0 || sum.warningMismatchDobCount > 0) {
-          setActiveFilter('warning');
-        } else {
-          setActiveFilter('all');
-        }
-      } catch (err) {
-        console.error('Lỗi khi ghép dữ liệu:', err);
-        alert('Có lỗi xảy ra trong quá trình đối soát dữ liệu.');
-      } finally {
-        setIsProcessing(false);
-      }
+      executeMatching(combinedBiaRecords, combinedHisRecords, true);
+      setIsProcessing(false);
     }, 200);
   };
 
   // Standard Clear Import (Reset Clean State)
   const handleClearImport = () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ danh sách đã import và đặt lại trạng thái ban đầu không?')) {
-      setHisFile(null);
-      setHisRecords([]);
-      setBiaFile(null);
-      setAvailableSheets([]);
-      setSelectedSheet('');
-      setBiaRowsBySheet({});
-      setBiaRecords([]);
+      setHisFiles([]);
+      setBiaFiles([]);
       setMatchedResults([]);
       setSummary(null);
       setActiveFilter('all');
@@ -250,61 +419,51 @@ export const App: React.FC = () => {
 
       {/* 3. MAIN CONTAINER */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Upload Zone (Visible initially or when user toggles) */}
-        {isUploadVisible ? (
+        {/* Full File Upload Section (Shown initially or when user toggles expand) */}
+        {isUploadVisible && (
           <FileUploadSection
-            hisFile={hisFile}
-            hisRecordCount={hisRecords.length}
-            onHisFileChange={handleHisFileChange}
-            biaFile={biaFile}
-            biaRecordCount={biaRecords.length}
-            availableSheets={availableSheets}
-            selectedSheet={selectedSheet}
-            onSheetChange={handleSheetChange}
-            onBiaFileChange={handleBiaFileChange}
+            hisFiles={hisFiles}
+            hisRecordCount={combinedHisRecords.length}
+            onAddHisFiles={handleAddHisFiles}
+            onReplaceHisFiles={handleReplaceHisFiles}
+            onReplaceSingleHisFile={handleReplaceSingleHisFile}
+            onRemoveHisFile={handleRemoveHisFile}
+            biaFiles={biaFiles}
+            biaRecordCount={combinedBiaRecords.length}
+            onAddBiaFiles={handleAddBiaFiles}
+            onReplaceBiaFiles={handleReplaceBiaFiles}
+            onReplaceSingleBiaFile={handleReplaceSingleBiaFile}
+            onRemoveBiaFile={handleRemoveBiaFile}
+            onChangeBiaSheet={handleChangeBiaSheet}
             isProcessing={isProcessing}
             onProcess={handleProcess}
             onClearImport={handleClearImport}
           />
-        ) : (
-          /* Compact Header bar when upload section is hidden */
-          <div className="bg-white rounded-2xl shadow-xs border border-slate-200 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in">
-            <div className="flex items-center space-x-3 text-xs text-slate-600 truncate">
-              <FileCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-              <div className="truncate">
-                <span className="font-bold text-slate-800">Dữ liệu đầu vào:</span>{' '}
-                <span className="text-sky-700 font-semibold">{hisFile?.name}</span> ({hisRecords.length} dòng HIS) +{' '}
-                <span className="text-indigo-700 font-semibold">{biaFile?.name}</span> ({biaRecords.length} hồ sơ Bìa)
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsUploadVisible(true)}
-                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-lg transition-colors cursor-pointer"
-                title="Hiển thị lại khung nạp file nếu cần thay đổi hoặc nạp thêm"
-              >
-                <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
-                Hiện khung nạp file
-              </button>
-
-              <button
-                type="button"
-                onClick={handleClearImport}
-                className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
-                title="Xóa danh sách và đặt lại trạng thái ban đầu"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Xóa DS
-              </button>
-            </div>
-          </div>
         )}
 
         {/* Results Section */}
         {summary && matchedResults.length > 0 && (
           <div className="space-y-5 animate-in fade-in duration-200">
+            {/* Interactive File Manager Bar in Results View */}
+            <ResultsFileManagerBar
+              hisFiles={hisFiles}
+              hisRecordCount={combinedHisRecords.length}
+              onAddHisFiles={handleAddHisFiles}
+              onReplaceHisFiles={handleReplaceHisFiles}
+              onReplaceSingleHisFile={handleReplaceSingleHisFile}
+              onRemoveHisFile={handleRemoveHisFile}
+              biaFiles={biaFiles}
+              biaRecordCount={combinedBiaRecords.length}
+              onAddBiaFiles={handleAddBiaFiles}
+              onReplaceBiaFiles={handleReplaceBiaFiles}
+              onReplaceSingleBiaFile={handleReplaceSingleBiaFile}
+              onRemoveBiaFile={handleRemoveBiaFile}
+              onChangeBiaSheet={handleChangeBiaSheet}
+              isUploadVisible={isUploadVisible}
+              onToggleUploadVisible={() => setIsUploadVisible(prev => !prev)}
+              onClearImport={handleClearImport}
+            />
+
             {/* Prominent Export CTA Banner */}
             <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 rounded-2xl p-5 sm:p-6 text-white shadow-lg shadow-emerald-700/20 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="space-y-1 text-center md:text-left">
@@ -354,7 +513,7 @@ export const App: React.FC = () => {
       {/* 4. MODALS */}
       <DisambiguationModal
         record={disambiguatingRecord}
-        allHisRecords={hisRecords}
+        allHisRecords={combinedHisRecords}
         onClose={() => setDisambiguatingRecord(null)}
         onSelectCandidate={handleSelectCandidate}
         onManualCustomEdit={handleManualCustomEdit}

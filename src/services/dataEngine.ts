@@ -1,6 +1,6 @@
 import * as XLSXModule from 'xlsx-js-style';
 const XLSX: any = (XLSXModule as any).default || XLSXModule;
-import { BiaRecord, HisRecord, MatchedRecord, ProcessingSummary } from '../types';
+import { BiaRecord, HisRecord, MatchedRecord, ProcessingSummary, UploadedFileItem } from '../types';
 
 /**
  * Remove Vietnamese diacritics and normalize string
@@ -157,7 +157,7 @@ export async function readExcelFileToRows(file: File): Promise<{ sheetNames: str
 /**
  * Parse HIS File rows into HisRecord list
  */
-export function parseHisRows(rows: string[][]): HisRecord[] {
+export function parseHisRows(rows: string[][], filePrefix: string = ''): HisRecord[] {
   if (!rows || rows.length < 2) return [];
 
   // Find header row containing "Mã BA" or "Tên bệnh nhân"
@@ -233,7 +233,7 @@ export function parseHisRows(rows: string[][]): HisRecord[] {
     });
 
     records.push({
-      id: `his_${i}_${maBA || maBN || tenBenhNhan}`,
+      id: `${filePrefix ? filePrefix + '_' : ''}his_${i}_${maBA || maBN || tenBenhNhan}`,
       maBA,
       maBN,
       tenBenhNhan,
@@ -258,7 +258,7 @@ export function parseHisRows(rows: string[][]): HisRecord[] {
 /**
  * Parse Bia Sheet rows into BiaRecord list
  */
-export function parseBiaRows(rows: string[][]): BiaRecord[] {
+export function parseBiaRows(rows: string[][], filePrefix: string = ''): BiaRecord[] {
   if (!rows || rows.length < 2) return [];
 
   // Find header row containing "STT" and ("HOVATEN" or "Họ và tên")
@@ -348,7 +348,7 @@ export function parseBiaRows(rows: string[][]): BiaRecord[] {
     });
 
     records.push({
-      id: `bia_${i}_${stt}_${hoVaTen}`,
+      id: `${filePrefix ? filePrefix + '_' : ''}bia_${i}_${stt}_${hoVaTen}`,
       stt,
       hoVaTen,
       ns,
@@ -368,6 +368,45 @@ export function parseBiaRows(rows: string[][]): BiaRecord[] {
   }
 
   return records;
+}
+
+/**
+ * Combine multiple HIS file records with intelligent deduplication (by maBA, maBN, or name+dob)
+ */
+export function combineHisRecords(fileItems: UploadedFileItem[]): HisRecord[] {
+  const seenKeys = new Set<string>();
+  const combined: HisRecord[] = [];
+
+  for (const item of fileItems) {
+    const list = item.parsedHisRecords || [];
+    for (const r of list) {
+      // Key for deduplication: maBA (if present), or maBN, or name+dob+gender
+      const dedupeKey = r.maBA
+        ? `ba_${r.maBA.trim().toUpperCase()}`
+        : r.maBN
+        ? `bn_${r.maBN.trim().toUpperCase()}`
+        : `namedob_${r.normalizedName}_${r.normalizedDob}_${r.normalizedGender}`;
+
+      if (!seenKeys.has(dedupeKey)) {
+        seenKeys.add(dedupeKey);
+        combined.push(r);
+      }
+    }
+  }
+
+  return combined;
+}
+
+/**
+ * Combine multiple Bìa file records
+ */
+export function combineBiaRecords(fileItems: UploadedFileItem[]): BiaRecord[] {
+  const combined: BiaRecord[] = [];
+  for (const item of fileItems) {
+    const list = item.parsedBiaRecords || [];
+    combined.push(...list);
+  }
+  return combined;
 }
 
 /**

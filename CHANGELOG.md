@@ -2,6 +2,23 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.4] - 2026-10-04
+
+### Tính năng mới (Added) & Cải tiến (Changed)
+- **Hỗ trợ nạp nhiều file & Nạp dồn dữ liệu (Multi-file Append):**
+  - Cho phép người dùng chọn và nạp nhiều file cùng lúc cho cả File 1 (HIS `.xls`/`.xlsx`) và File 2 (Danh sách Bìa `.xlsx`/`.xls`) thông qua nút "+ Thêm file" hoặc kéo thả nhiều file vào khu vực nạp.
+  - Tự động khử trùng lặp dữ liệu HIS thông minh (theo `Mã BA`, `Mã BN` hoặc `Họ tên + Ngày sinh + Giới tính`) khi import nhiều đợt HIS trùng nhau.
+- **Hỗ trợ cơ chế thay thế trực tiếp (Live File Replacement):**
+  - Cung cấp nút `Thay thế toàn bộ` để làm mới hoàn toàn danh sách file một cách nhanh chóng.
+  - Cung cấp nút `🔄 Thay` cho từng file đơn lẻ trong danh sách đã nạp, cho phép thay đổi file lỗi/sửa đổi mà không làm ảnh hưởng tới các file khác đã nạp.
+- **Chọn sheet độc lập cho từng file Bìa:**
+  - Khi nạp nhiều file Danh sách khác nhau, người dùng có thể tùy chỉnh chọn sheet độc lập cho từng file riêng biệt.
+- **Thanh quản lý file tương tác trực tiếp ngay tại màn hình kết quả (ResultsFileManagerBar):**
+  - Sau khi đối soát xong, người dùng không cần phải xóa danh sách hay thao tác lại từ đầu. Ngay trên màn hình kết quả, thanh quản lý file cho phép: thêm file mới, thay thế file, đổi sheet hoặc xóa file.
+  - **Cơ chế re-matching tự động tức thì:** Ngay khi có bất kỳ thay đổi nào về file ở màn hình kết quả, hệ thống tự động đối soát và cập nhật bảng kết quả, số liệu thống kê và nút xuất Excel ngay lập tức.
+
+---
+
 ## [1.0.3] - 2026-10-01
 
 ### Cải tiến (Changed)

@@ -4,13 +4,13 @@
 
 | Thông tin | Giá trị chuẩn |
 |---|---|
-| **Phiên bản** | `1.0.3` (Mới nhất) |
-| **Ngày phát hành** | 2026-10-01 |
+| **Phiên bản** | `1.0.4` (Mới nhất) |
+| **Ngày phát hành** | 2026-10-04 |
 | **Tác giả** | [Nguyễn Sơn Nam (Nsnnam / NamNS)](https://github.com/Nsnnam) |
 | **Múi giờ** | GMT+7 (`Asia/Ho_Chi_Minh`) |
 | **Kho mã nguồn** | [https://github.com/Nsnnam/nsn-his-excel-matcher](https://github.com/Nsnnam/nsn-his-excel-matcher) |
 | **Trang trực tuyến (Live)** | [https://nsnnam.github.io/nsn-his-excel-matcher/](https://nsnnam.github.io/nsn-his-excel-matcher/) |
-| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.3-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
+| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.4-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
 | **Khóa truy cập** | `namns` (Không phân biệt hoa thường) |
 | **Giấy phép** | MIT (Public Open-Source) |
 
@@ -80,6 +80,12 @@ pnpm run build:single
 
 ## Lịch sử phiên bản tóm tắt
 
+- **v1.0.4 (2026-10-04):**
+  - Hỗ trợ nạp dồn nhiều file cùng lúc cho cả File 1 (HIS `.xls`/`.xlsx`) và File 2 (Danh sách Bìa `.xlsx`/`.xls`) qua nút "+ Thêm file" hoặc kéo thả nhiều file.
+  - Hỗ trợ cơ chế thay thế trực tiếp: Thay thế toàn bộ danh sách hoặc thay thế từng file đơn lẻ bằng nút "🔄 Thay" ngay trên danh sách nạp.
+  - Tự động đối soát và cho phép chọn sheet độc lập cho từng file Bìa khi import nhiều file khác nhau.
+  - Bổ sung thanh quản lý file tương tác trực tiếp ngay tại màn hình kết quả đối soát (`ResultsFileManagerBar`): Cho phép thêm mới, thay thế, đổi sheet hoặc xóa file mà không cần quay lại từ đầu.
+  - Cơ chế re-matching tự động tức thì ngay khi có bất kỳ thay đổi file nào.
 - **v1.0.3 (2026-10-01):**
   - Tự động nhận diện các biến thể tên công ty trên sheet Bìa (`TENCTY`, `Tên C.ty`, `C.ty`, `Cơ quan`, `CT`, `CQ`, `Đơn vị`, `Doanh nghiệp`...).
   - Tự động fallback lấy trực tiếp từ cột "Nơi làm việc" trong file HIS nếu không tìm thấy tên công ty ở file sheet Bìa.
