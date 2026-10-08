@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.4',
-  releaseDate: '2026-10-04',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, hỗ trợ nạp nhiều file / nạp dồn / thay thế trực tiếp tại giao diện nạp và kết quả, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
+  version: '1.0.5',
+  releaseDate: '2026-10-08',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện cột Địa chỉ ở cả 2 file, cho phép chọn cột thủ công nếu không tự nhận diện, nạp nhiều file / nạp dồn, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,17 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.5',
+      date: '2026-10-08',
+      features: [
+        'Tự động nhận diện cột Địa chỉ ở cả 2 nguồn: file kết xuất HIS (Đ/c BN, Đ/c, Địa chỉ, Hộ khẩu...) và file Danh sách Bìa (ĐC 2Cấp, ĐC, Địa chỉ, Địa chỉ (sau sáp nhập)...).',
+        'Cho phép chọn cột Địa chỉ thủ công từ danh sách cột trong sheet của một trong 2 file (hoặc cả 2 file) nếu file không tự động nhận diện được hoặc người dùng muốn tùy biến cột.',
+        'Cơ chế fallback thông minh: Tự động lấy địa chỉ từ file HIS nếu dòng bệnh nhân trên file Bìa bị bỏ trống địa chỉ (hoặc ngược lại).',
+        'Bổ sung tùy chọn chọn nguồn Địa chỉ ưu tiên: "Ưu tiên Bìa (dự phòng HIS)" hoặc "Ưu tiên HIS (dự phòng Bìa)" linh hoạt theo thực tế.',
+        'Tích hợp bảng chọn cột Địa chỉ tương tác trực tiếp ở cả giao diện nạp file ban đầu và thanh quản lý file sau khi đã ghép dữ liệu, tự động re-match tức thì khi đổi cột.',
+      ],
+    },
     {
       version: '1.0.4',
       date: '2026-10-04',

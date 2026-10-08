@@ -11,9 +11,10 @@ import {
   ChevronDown,
   ChevronUp,
   FolderSync,
-  Layers
+  Layers,
+  MapPin
 } from 'lucide-react';
-import { UploadedFileItem } from '../types';
+import { AddressPriority, UploadedFileItem } from '../types';
 
 interface ResultsFileManagerBarProps {
   hisFiles: UploadedFileItem[];
@@ -22,6 +23,7 @@ interface ResultsFileManagerBarProps {
   onReplaceHisFiles: (files: File[]) => void;
   onReplaceSingleHisFile: (fileId: string, newFile: File) => void;
   onRemoveHisFile: (fileId: string) => void;
+  onChangeHisAddressCol: (fileId: string, colIndex: number) => void;
 
   biaFiles: UploadedFileItem[];
   biaRecordCount: number;
@@ -30,6 +32,10 @@ interface ResultsFileManagerBarProps {
   onReplaceSingleBiaFile: (fileId: string, newFile: File) => void;
   onRemoveBiaFile: (fileId: string) => void;
   onChangeBiaSheet: (fileId: string, sheetName: string) => void;
+  onChangeBiaAddressCol: (fileId: string, colIndex: number) => void;
+
+  addressPriority: AddressPriority;
+  onChangeAddressPriority: (priority: AddressPriority) => void;
 
   isUploadVisible: boolean;
   onToggleUploadVisible: () => void;
@@ -43,6 +49,7 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
   onReplaceHisFiles,
   onReplaceSingleHisFile,
   onRemoveHisFile,
+  onChangeHisAddressCol,
   biaFiles,
   biaRecordCount,
   onAddBiaFiles,
@@ -50,6 +57,9 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
   onReplaceSingleBiaFile,
   onRemoveBiaFile,
   onChangeBiaSheet,
+  onChangeBiaAddressCol,
+  addressPriority,
+  onChangeAddressPriority,
   isUploadVisible,
   onToggleUploadVisible,
   onClearImport,
@@ -186,7 +196,7 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
           </div>
           <div>
             <div className="font-bold text-slate-800 text-sm flex items-center gap-2">
-              <span>Quản Lý File Đã Nạp (Hỗ trợ thêm / thay thế trực tiếp)</span>
+              <span>Quản Lý File & Cột Địa Chỉ (Hỗ trợ thêm / thay thế / đổi cột trực tiếp)</span>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ✓ Đang đối soát
               </span>
@@ -198,7 +208,22 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Address Priority Quick Switch in Results View */}
+          <div className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+            <MapPin className="w-3.5 h-3.5 text-sky-600" />
+            <span className="text-slate-500 font-medium">Ưu tiên Đ/C:</span>
+            <select
+              value={addressPriority}
+              onChange={(e) => onChangeAddressPriority(e.target.value as any)}
+              className="text-[11px] bg-white border border-slate-300 rounded px-1.5 py-0.5 text-slate-800 font-bold cursor-pointer"
+              title="Chọn ưu tiên nguồn lấy Địa chỉ"
+            >
+              <option value="bia_first">Bìa trước (dự phòng HIS)</option>
+              <option value="his_first">HIS trước (dự phòng Bìa)</option>
+            </select>
+          </div>
+
           <button
             type="button"
             onClick={onToggleUploadVisible}
@@ -225,12 +250,12 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
             title="Xóa danh sách và đặt lại trạng thái ban đầu"
           >
             <Trash2 className="w-3.5 h-3.5 mr-1" />
-            <span>Xóa DS</span>
+            Xóa DS
           </button>
         </div>
       </div>
 
-      {/* Two interactive file management boxes */}
+      {/* 2 Sub-bars for HIS and Bia */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* ================= HIS FILES BAR ================= */}
         <div
@@ -276,41 +301,83 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
           </div>
 
           {/* Chips list */}
-          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
             {hisFiles.map((f, idx) => (
               <div
                 key={f.id}
-                className="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-between gap-2 text-xs shadow-2xs"
+                className="bg-white p-2 rounded-lg border border-slate-200 flex flex-col gap-1.5 text-xs shadow-2xs"
               >
-                <div className="flex items-center space-x-1.5 min-w-0">
-                  <span className="text-sky-600 font-bold font-mono text-[10px] w-4">
-                    {idx + 1}.
-                  </span>
-                  <div className="truncate font-medium text-slate-800" title={f.name}>
-                    {f.name}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-1.5 min-w-0">
+                    <span className="text-sky-600 font-bold font-mono text-[10px] w-4 shrink-0">
+                      {idx + 1}.
+                    </span>
+                    <div className="truncate font-medium text-slate-800" title={f.name}>
+                      {f.name}
+                    </div>
+                    <span className="text-[10.5px] text-emerald-700 font-semibold shrink-0">
+                      ({f.recordCount} dòng)
+                    </span>
                   </div>
-                  <span className="text-[10.5px] text-emerald-700 font-semibold shrink-0">
-                    ({f.recordCount} dòng)
-                  </span>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => triggerSingleHis(f.id)}
+                      className="p-1 text-slate-500 hover:text-sky-700 hover:bg-sky-50 rounded transition-colors cursor-pointer"
+                      title="Thay thế file này"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveHisFile(f.id)}
+                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                      title="Xóa file này khỏi danh sách"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => triggerSingleHis(f.id)}
-                    className="p-1 text-slate-500 hover:text-sky-700 hover:bg-sky-50 rounded transition-colors cursor-pointer"
-                    title="Thay thế file này"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveHisFile(f.id)}
-                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                    title="Xóa file này khỏi danh sách"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                {/* Address Column selector for this file */}
+                <div className="flex items-center justify-between gap-1.5 text-[10.5px] pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-slate-400 font-medium shrink-0">Đ/C:</span>
+                    <select
+                      value={f.addressColIndex ?? -1}
+                      onChange={(e) => onChangeHisAddressCol(f.id, Number(e.target.value))}
+                      className={`text-[10.5px] rounded px-1.5 py-0.5 font-medium cursor-pointer truncate max-w-[170px] ${
+                        f.addressColIndex !== undefined && f.addressColIndex >= 0
+                          ? 'bg-slate-50 border border-slate-200 text-slate-700'
+                          : 'bg-amber-50 border border-amber-300 text-amber-900 font-bold'
+                      }`}
+                      title="Chọn cột Địa chỉ cho file này"
+                    >
+                      <option value="-1">-- Không lấy địa chỉ file này --</option>
+                      {f.headers && f.headers.map((h, hIdx) => (
+                        <option key={hIdx} value={hIdx}>
+                          {h ? h : `[Cột ${hIdx + 1}]`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {f.addressColIndex !== undefined && f.addressColIndex >= 0 ? (
+                    f.isAddressAutoDetected ? (
+                      <span className="text-[9.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-bold shrink-0">
+                        ✓ Tự nhận diện
+                      </span>
+                    ) : (
+                      <span className="text-[9.5px] text-sky-700 bg-sky-50 px-1 py-0.2 rounded font-semibold shrink-0">
+                        Đã chọn
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[9.5px] text-amber-800 bg-amber-100 px-1 py-0.2 rounded font-bold shrink-0">
+                      ⚠️ Chưa có
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -365,57 +432,99 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
           </div>
 
           {/* Chips list */}
-          <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
             {biaFiles.map((f, idx) => (
               <div
                 key={f.id}
-                className="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-between gap-2 text-xs shadow-2xs"
+                className="bg-white p-2 rounded-lg border border-slate-200 flex flex-col gap-1.5 text-xs shadow-2xs"
               >
-                <div className="flex items-center space-x-1.5 min-w-0">
-                  <span className="text-indigo-600 font-bold font-mono text-[10px] w-4">
-                    {idx + 1}.
-                  </span>
-                  <div className="truncate font-medium text-slate-800" title={f.name}>
-                    {f.name}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-1.5 min-w-0">
+                    <span className="text-indigo-600 font-bold font-mono text-[10px] w-4 shrink-0">
+                      {idx + 1}.
+                    </span>
+                    <div className="truncate font-medium text-slate-800" title={f.name}>
+                      {f.name}
+                    </div>
+                    <span className="text-[10.5px] text-emerald-700 font-semibold shrink-0">
+                      ({f.recordCount} hồ sơ)
+                    </span>
                   </div>
-                  <span className="text-[10.5px] text-emerald-700 font-semibold shrink-0">
-                    ({f.recordCount} hồ sơ)
-                  </span>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Sheet Selector for this specific file */}
+                    {f.availableSheets && f.availableSheets.length > 1 && (
+                      <select
+                        value={f.selectedSheet || ''}
+                        onChange={(e) => onChangeBiaSheet(f.id, e.target.value)}
+                        className="text-[10.5px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-slate-700 font-medium cursor-pointer max-w-[90px] truncate"
+                        title="Đổi sheet file này"
+                      >
+                        {f.availableSheets.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => triggerSingleBia(f.id)}
+                      className="p-1 text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors cursor-pointer"
+                      title="Thay thế file này"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveBiaFile(f.id)}
+                      className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                      title="Xóa file này khỏi danh sách"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  {/* Sheet Selector for this specific file */}
-                  {f.availableSheets && f.availableSheets.length > 1 && (
+                {/* Address Column selector for this Bia file */}
+                <div className="flex items-center justify-between gap-1.5 text-[10.5px] pt-1 border-t border-slate-100">
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="text-slate-400 font-medium shrink-0">Đ/C:</span>
                     <select
-                      value={f.selectedSheet || ''}
-                      onChange={(e) => onChangeBiaSheet(f.id, e.target.value)}
-                      className="text-[10.5px] bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-slate-700 font-medium cursor-pointer max-w-[90px] truncate"
-                      title="Đổi sheet file này"
+                      value={f.addressColIndex ?? -1}
+                      onChange={(e) => onChangeBiaAddressCol(f.id, Number(e.target.value))}
+                      className={`text-[10.5px] rounded px-1.5 py-0.5 font-medium cursor-pointer truncate max-w-[170px] ${
+                        f.addressColIndex !== undefined && f.addressColIndex >= 0
+                          ? 'bg-slate-50 border border-slate-200 text-slate-700'
+                          : 'bg-amber-50 border border-amber-300 text-amber-900 font-bold'
+                      }`}
+                      title="Chọn cột Địa chỉ cho file Danh sách này"
                     >
-                      {f.availableSheets.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      <option value="-1">-- Không lấy địa chỉ file này --</option>
+                      {f.headers && f.headers.map((h, hIdx) => (
+                        <option key={hIdx} value={hIdx}>
+                          {h ? h : `[Cột ${hIdx + 1}]`}
                         </option>
                       ))}
                     </select>
-                  )}
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => triggerSingleBia(f.id)}
-                    className="p-1 text-slate-500 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors cursor-pointer"
-                    title="Thay thế file này"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveBiaFile(f.id)}
-                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                    title="Xóa file này khỏi danh sách"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                  {f.addressColIndex !== undefined && f.addressColIndex >= 0 ? (
+                    f.isAddressAutoDetected ? (
+                      <span className="text-[9.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-bold shrink-0">
+                        ✓ Tự nhận diện
+                      </span>
+                    ) : (
+                      <span className="text-[9.5px] text-indigo-700 bg-indigo-50 px-1 py-0.2 rounded font-semibold shrink-0">
+                        Đã chọn
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[9.5px] text-amber-800 bg-amber-100 px-1 py-0.2 rounded font-bold shrink-0">
+                      ⚠️ Chưa có
+                    </span>
+                  )}
                 </div>
               </div>
             ))}

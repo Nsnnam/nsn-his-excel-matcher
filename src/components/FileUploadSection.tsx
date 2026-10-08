@@ -11,10 +11,11 @@ import {
   FileCheck,
   X,
   Layers,
-  FolderSync
+  FolderSync,
+  MapPin
 } from 'lucide-react';
 import { exportToStandardExcel } from '../services/dataEngine';
-import { UploadedFileItem } from '../types';
+import { AddressPriority, UploadedFileItem } from '../types';
 
 interface FileUploadSectionProps {
   // HIS Files
@@ -24,6 +25,7 @@ interface FileUploadSectionProps {
   onReplaceHisFiles: (files: File[]) => void;
   onReplaceSingleHisFile: (fileId: string, newFile: File) => void;
   onRemoveHisFile: (fileId: string) => void;
+  onChangeHisAddressCol: (fileId: string, colIndex: number) => void;
 
   // Bia Files
   biaFiles: UploadedFileItem[];
@@ -33,6 +35,11 @@ interface FileUploadSectionProps {
   onReplaceSingleBiaFile: (fileId: string, newFile: File) => void;
   onRemoveBiaFile: (fileId: string) => void;
   onChangeBiaSheet: (fileId: string, sheetName: string) => void;
+  onChangeBiaAddressCol: (fileId: string, colIndex: number) => void;
+
+  // Address Priority
+  addressPriority: AddressPriority;
+  onChangeAddressPriority: (priority: AddressPriority) => void;
 
   isProcessing: boolean;
   onProcess: () => void;
@@ -46,6 +53,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onReplaceHisFiles,
   onReplaceSingleHisFile,
   onRemoveHisFile,
+  onChangeHisAddressCol,
   biaFiles,
   biaRecordCount,
   onAddBiaFiles,
@@ -53,6 +61,9 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onReplaceSingleBiaFile,
   onRemoveBiaFile,
   onChangeBiaSheet,
+  onChangeBiaAddressCol,
+  addressPriority,
+  onChangeAddressPriority,
   isProcessing,
   onProcess,
   onClearImport,
@@ -101,25 +112,28 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
     }
   };
 
+  // Trigger Single File Replacement for HIS
+  const triggerSingleHisReplace = (fileId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedHisReplaceId(fileId);
+    hisSingleReplaceInputRef.current?.click();
+  };
+
+  // Trigger Single File Replacement for Bia
+  const triggerSingleBiaReplace = (fileId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedBiaReplaceId(fileId);
+    biaSingleReplaceInputRef.current?.click();
+  };
+
+  // Download template
   const handleDownloadTemplate = () => {
     exportToStandardExcel([], 'FileMauChuan_NsN_Template');
   };
 
-  const triggerSingleHisReplace = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedHisReplaceId(id);
-    hisSingleReplaceInputRef.current?.click();
-  };
-
-  const triggerSingleBiaReplace = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedBiaReplaceId(id);
-    biaSingleReplaceInputRef.current?.click();
-  };
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7 transition-all">
-      {/* Hidden inputs for HIS */}
+    <div className="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 sm:p-6 transition-all">
+      {/* Hidden File Inputs for HIS */}
       <input
         ref={hisAppendInputRef}
         type="file"
@@ -160,7 +174,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         }}
       />
 
-      {/* Hidden inputs for Bia */}
+      {/* Hidden File Inputs for Bia */}
       <input
         ref={biaAppendInputRef}
         type="file"
@@ -206,10 +220,10 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-sky-600" />
-            Nạp File Excel Đầu Vào (Hỗ Trợ Nạp Nhiều File / Thay Thế)
+            Nạp File Excel Đầu Vào & Nhận Diện Địa Chỉ Tự Động
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cho phép chọn nhiều file cùng lúc, nạp dồn dữ liệu hoặc thay thế linh hoạt trực tiếp trên giao diện
+            Tự động nhận diện cột Địa chỉ ở cả 2 file HIS và Bìa, hỗ trợ chọn cột thủ công nếu không tự nhận diện
           </p>
         </div>
 
@@ -269,7 +283,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                 </div>
                 <div>
                   <div className="text-sm font-bold text-slate-800">
-                    File 1: Dữ liệu xuất từ HIS (.xls / .xlsx)
+                    File 1: File Tiếp nhận xuất từ VNPT-HIS
                   </div>
                   <div className="text-[11px] text-slate-500">
                     {hisFiles.length > 0 ? (
@@ -277,7 +291,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                         Đã nạp {hisFiles.length} file · {hisRecordCount} dòng HIS
                       </span>
                     ) : (
-                      'Chứa: Mã BA, Mã BN, Tên BN, Ngày sinh, Giới tính, Nơi làm việc'
+                      'Chứa: Mã BA, Mã BN, Tên bệnh nhân, Ngày sinh, Tuổi, Giới tính, Đ/c'
                     )}
                   </div>
                 </div>
@@ -310,51 +324,101 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
             {/* List of uploaded HIS files */}
             {hisFiles.length > 0 ? (
-              <div className="space-y-2 mt-3 mb-3 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 mt-3 mb-3 max-h-64 overflow-y-auto pr-1">
                 {hisFiles.map((fileItem, idx) => (
                   <div
                     key={fileItem.id}
-                    className="p-2.5 bg-white border border-slate-200 hover:border-sky-300 rounded-xl flex items-center justify-between gap-2 shadow-2xs text-xs transition-all"
+                    className="p-3 bg-white border border-slate-200 hover:border-sky-300 rounded-xl shadow-2xs text-xs transition-all space-y-2"
                   >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className="w-5 h-5 rounded-md bg-sky-50 text-sky-700 font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-800 truncate" title={fileItem.name}>
-                          {fileItem.name}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-5 h-5 rounded-md bg-sky-50 text-sky-700 font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-800 truncate" title={fileItem.name}>
+                            {fileItem.name}
+                          </div>
+                          <div className="text-[10.5px] text-slate-400 flex items-center space-x-2">
+                            <span>{(fileItem.size / 1024).toFixed(1)} KB</span>
+                            <span>•</span>
+                            <span className="font-semibold text-emerald-700">
+                              {fileItem.recordCount} dòng
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-[10.5px] text-slate-400 flex items-center space-x-2">
-                          <span>{(fileItem.size / 1024).toFixed(1)} KB</span>
-                          <span>•</span>
-                          <span className="font-semibold text-emerald-700">
-                            {fileItem.recordCount} dòng
-                          </span>
-                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => triggerSingleHisReplace(fileItem.id, e)}
+                          className="px-2 py-1 text-[10.5px] font-medium text-slate-600 hover:text-sky-700 bg-slate-50 hover:bg-sky-50 border border-slate-200 rounded-md transition-colors cursor-pointer"
+                          title="Thay thế trực tiếp file này bằng file khác"
+                        >
+                          <RefreshCw className="w-3 h-3 inline mr-1 text-slate-500" />
+                          Thay
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveHisFile(fileItem.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                          title="Xóa file này"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => triggerSingleHisReplace(fileItem.id, e)}
-                        className="px-2 py-1 text-[10.5px] font-medium text-slate-600 hover:text-sky-700 bg-slate-50 hover:bg-sky-50 border border-slate-200 rounded-md transition-colors cursor-pointer"
-                        title="Thay thế trực tiếp file này bằng file khác"
-                      >
-                        <RefreshCw className="w-3 h-3 inline mr-1 text-slate-500" />
-                        Thay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveHisFile(fileItem.id);
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                        title="Xóa file này"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    {/* Address Column Mapping for this HIS file */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                        <span className="text-slate-500 font-semibold shrink-0 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-sky-600" />
+                          Cột Địa chỉ:
+                        </span>
+                        <select
+                          value={fileItem.addressColIndex ?? -1}
+                          onChange={(e) => onChangeHisAddressCol(fileItem.id, Number(e.target.value))}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-[11px] rounded px-2 py-0.5 font-medium transition-all cursor-pointer truncate max-w-[220px] ${
+                            fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0
+                              ? 'bg-slate-50 border border-slate-200 text-slate-800'
+                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold ring-1 ring-amber-300'
+                          }`}
+                          title="Chọn cột đại diện cho Địa chỉ trong file HIS này"
+                        >
+                          <option value="-1">-- Không lấy địa chỉ từ file này --</option>
+                          {fileItem.headers && fileItem.headers.length > 0 ? (
+                            fileItem.headers.map((h, hIdx) => (
+                              <option key={hIdx} value={hIdx}>
+                                {h ? h : `[Cột ${hIdx + 1}] (Trống)`}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="-1" disabled>Không có danh sách cột</option>
+                          )}
+                        </select>
+                      </div>
+
+                      {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
+                        fileItem.isAddressAutoDetected ? (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            ✓ Tự nhận diện
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
+                            Đã chọn
+                          </span>
+                        )
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                          ⚠️ Chưa chọn cột Đ/C
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -457,39 +521,39 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
             {/* List of uploaded Bia files */}
             {biaFiles.length > 0 ? (
-              <div className="space-y-2 mt-3 mb-3 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-2 mt-3 mb-3 max-h-64 overflow-y-auto pr-1">
                 {biaFiles.map((fileItem, idx) => (
                   <div
                     key={fileItem.id}
-                    className="p-2.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs text-xs transition-all"
+                    className="p-3 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl shadow-2xs text-xs transition-all space-y-2"
                   >
-                    <div className="flex items-center space-x-2 min-w-0">
-                      <span className="w-5 h-5 rounded-md bg-indigo-50 text-indigo-700 font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-800 truncate" title={fileItem.name}>
-                          {fileItem.name}
-                        </div>
-                        <div className="text-[10.5px] text-slate-400 flex items-center space-x-2">
-                          <span>{(fileItem.size / 1024).toFixed(1)} KB</span>
-                          <span>•</span>
-                          <span className="font-semibold text-emerald-700">
-                            {fileItem.recordCount} hồ sơ
-                          </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-5 h-5 rounded-md bg-indigo-50 text-indigo-700 font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-800 truncate" title={fileItem.name}>
+                            {fileItem.name}
+                          </div>
+                          <div className="text-[10.5px] text-slate-400 flex items-center space-x-2">
+                            <span>{(fileItem.size / 1024).toFixed(1)} KB</span>
+                            <span>•</span>
+                            <span className="font-semibold text-emerald-700">
+                              {fileItem.recordCount} hồ sơ
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                      {/* Sheet Selector for this file */}
-                      {fileItem.availableSheets && fileItem.availableSheets.length > 1 && (
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Sheet Selector for this file */}
+                        {fileItem.availableSheets && fileItem.availableSheets.length > 1 && (
                           <select
                             value={fileItem.selectedSheet || ''}
                             onChange={(e) => onChangeBiaSheet(fileItem.id, e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[11px] bg-white border border-slate-300 rounded px-1.5 py-0.5 text-slate-800 font-medium cursor-pointer max-w-[110px] truncate"
+                            className="text-[11px] bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-slate-800 font-medium cursor-pointer max-w-[110px] truncate"
                             title="Chọn Sheet của file này"
                           >
                             {fileItem.availableSheets.map((s) => (
@@ -498,29 +562,77 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                               </option>
                             ))}
                           </select>
-                        </div>
-                      )}
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={(e) => triggerSingleBiaReplace(fileItem.id, e)}
-                        className="px-2 py-1 text-[10.5px] font-medium text-slate-600 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-md transition-colors cursor-pointer"
-                        title="Thay thế trực tiếp file này bằng file khác"
-                      >
-                        <RefreshCw className="w-3 h-3 inline mr-1 text-slate-500" />
-                        Thay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveBiaFile(fileItem.id);
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                        title="Xóa file này"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => triggerSingleBiaReplace(fileItem.id, e)}
+                          className="px-2 py-1 text-[10.5px] font-medium text-slate-600 hover:text-indigo-700 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-md transition-colors cursor-pointer"
+                          title="Thay thế trực tiếp file này bằng file khác"
+                        >
+                          <RefreshCw className="w-3 h-3 inline mr-1 text-slate-500" />
+                          Thay
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveBiaFile(fileItem.id);
+                          }}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                          title="Xóa file này"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Address Column Mapping for this Bia file */}
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                        <span className="text-slate-500 font-semibold shrink-0 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-indigo-600" />
+                          Cột Địa chỉ:
+                        </span>
+                        <select
+                          value={fileItem.addressColIndex ?? -1}
+                          onChange={(e) => onChangeBiaAddressCol(fileItem.id, Number(e.target.value))}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-[11px] rounded px-2 py-0.5 font-medium transition-all cursor-pointer truncate max-w-[220px] ${
+                            fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0
+                              ? 'bg-slate-50 border border-slate-200 text-slate-800'
+                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold ring-1 ring-amber-300'
+                          }`}
+                          title="Chọn cột đại diện cho Địa chỉ trong file Danh sách này"
+                        >
+                          <option value="-1">-- Không lấy địa chỉ từ file này --</option>
+                          {fileItem.headers && fileItem.headers.length > 0 ? (
+                            fileItem.headers.map((h, hIdx) => (
+                              <option key={hIdx} value={hIdx}>
+                                {h ? h : `[Cột ${hIdx + 1}] (Trống)`}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="-1" disabled>Không có danh sách cột</option>
+                          )}
+                        </select>
+                      </div>
+
+                      {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
+                        fileItem.isAddressAutoDetected ? (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            ✓ Tự nhận diện
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                            Đã chọn
+                          </span>
+                        )
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                          ⚠️ Chưa chọn cột Đ/C
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -554,16 +666,41 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         </div>
       </div>
 
-      {/* Action Submit */}
-      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100">
-        <div className="text-xs text-slate-500">
-          💡 Hỗ trợ nạp nhiều file cùng lúc, tự động ghép theo Tên + Giới tính, đối soát Tuổi và fallback Nơi làm việc từ HIS.
+      {/* Address Priority Options & Action Submit */}
+      <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100">
+        <div className="flex flex-wrap items-center gap-3 text-xs bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-slate-700">
+          <span className="font-bold text-slate-700 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 text-sky-600" />
+            Nguồn Địa chỉ ưu tiên:
+          </span>
+          <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
+            <input
+              type="radio"
+              name="addressPriority"
+              value="bia_first"
+              checked={addressPriority === 'bia_first'}
+              onChange={() => onChangeAddressPriority('bia_first')}
+              className="text-sky-600 focus:ring-sky-500 cursor-pointer"
+            />
+            <span className="font-medium">Ưu tiên Bìa (dự phòng HIS khi trống)</span>
+          </label>
+          <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
+            <input
+              type="radio"
+              name="addressPriority"
+              value="his_first"
+              checked={addressPriority === 'his_first'}
+              onChange={() => onChangeAddressPriority('his_first')}
+              className="text-sky-600 focus:ring-sky-500 cursor-pointer"
+            />
+            <span className="font-medium">Ưu tiên HIS (dự phòng Bìa khi trống)</span>
+          </label>
         </div>
 
         <button
           onClick={onProcess}
           disabled={hisFiles.length === 0 || biaFiles.length === 0 || isProcessing}
-          className="w-full sm:w-auto px-7 py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md shadow-sky-600/20 flex items-center justify-center space-x-2 transition-all cursor-pointer"
+          className="w-full md:w-auto px-7 py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl shadow-md shadow-sky-600/20 flex items-center justify-center space-x-2 transition-all cursor-pointer"
         >
           {isProcessing ? (
             <>

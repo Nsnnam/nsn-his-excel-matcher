@@ -14,6 +14,7 @@ import { GuideModal } from './components/GuideModal';
 import { AboutModal } from './components/AboutModal';
 import { Footer } from './components/Footer';
 import {
+  AddressPriority,
   BiaRecord,
   HisRecord,
   MatchedRecord,
@@ -22,6 +23,9 @@ import {
 } from './types';
 import {
   readExcelFileToRows,
+  extractHisHeaders,
+  extractBiaHeaders,
+  detectAddressColumnIndex,
   parseHisRows,
   parseBiaRows,
   combineHisRecords,
@@ -53,6 +57,9 @@ export const App: React.FC = () => {
   const [hisFiles, setHisFiles] = useState<UploadedFileItem[]>([]);
   const [biaFiles, setBiaFiles] = useState<UploadedFileItem[]>([]);
 
+  // Address Priority State (Default: prefer Bia, fallback to HIS)
+  const [addressPriority, setAddressPriority] = useState<AddressPriority>('bia_first');
+
   // Combined records (memoized for performance)
   const combinedHisRecords = useMemo(() => combineHisRecords(hisFiles), [hisFiles]);
   const combinedBiaRecords = useMemo(() => combineBiaRecords(biaFiles), [biaFiles]);
@@ -72,13 +79,27 @@ export const App: React.FC = () => {
     setIsUnlocked(false);
   };
 
-  // Helper: Parse a single HIS File to UploadedFileItem
-  const parseSingleHisFile = async (file: File, fileIndex: number): Promise<UploadedFileItem> => {
+  // Helper: Parse a single HIS File to UploadedFileItem with auto address detection
+  const parseSingleHisFile = async (
+    file: File,
+    fileIndex: number,
+    customAddressColIndex?: number
+  ): Promise<UploadedFileItem> => {
     const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
     const firstSheet = sheetNames[0] || '';
     const rows = rowsBySheet[firstSheet] || [];
+    const { headers } = extractHisHeaders(rows);
+
+    const detectedAddressIdx = detectAddressColumnIndex(headers);
+    const addressColIndex = customAddressColIndex !== undefined
+      ? customAddressColIndex
+      : (detectedAddressIdx !== -1 ? detectedAddressIdx : -1);
+    const isAddressAutoDetected = customAddressColIndex === undefined && detectedAddressIdx !== -1;
+    const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
+
     const filePrefix = `his_${Date.now()}_${fileIndex}`;
-    const parsed = parseHisRows(rows, filePrefix);
+    const parsed = parseHisRows(rows, filePrefix, addressColIndex);
+
     return {
       id: `his_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       file,
@@ -89,18 +110,37 @@ export const App: React.FC = () => {
       availableSheets: sheetNames,
       selectedSheet: firstSheet,
       rawRowsBySheet: rowsBySheet,
+      headers,
+      addressColIndex,
+      addressColName,
+      isAddressAutoDetected,
       parsedHisRecords: parsed,
     };
   };
 
-  // Helper: Parse a single Bia File to UploadedFileItem
-  const parseSingleBiaFile = async (file: File, fileIndex: number): Promise<UploadedFileItem> => {
+  // Helper: Parse a single Bia File to UploadedFileItem with auto address detection
+  const parseSingleBiaFile = async (
+    file: File,
+    fileIndex: number,
+    customAddressColIndex?: number,
+    targetSheetName?: string
+  ): Promise<UploadedFileItem> => {
     const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
     const foundBia = sheetNames.find(s => s.toLowerCase() === 'bìa' || s.toLowerCase() === 'bia');
-    const targetSheet = foundBia || sheetNames[0] || '';
-    const rows = rowsBySheet[targetSheet] || [];
+    const selectedSheet = targetSheetName || foundBia || sheetNames[0] || '';
+    const rows = rowsBySheet[selectedSheet] || [];
+    const { headers } = extractBiaHeaders(rows);
+
+    const detectedAddressIdx = detectAddressColumnIndex(headers);
+    const addressColIndex = customAddressColIndex !== undefined
+      ? customAddressColIndex
+      : (detectedAddressIdx !== -1 ? detectedAddressIdx : -1);
+    const isAddressAutoDetected = customAddressColIndex === undefined && detectedAddressIdx !== -1;
+    const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
+
     const filePrefix = `bia_${Date.now()}_${fileIndex}`;
-    const parsed = parseBiaRows(rows, filePrefix);
+    const parsed = parseBiaRows(rows, filePrefix, addressColIndex);
+
     return {
       id: `bia_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       file,
@@ -109,14 +149,23 @@ export const App: React.FC = () => {
       recordCount: parsed.length,
       uploadedAt: new Date(),
       availableSheets: sheetNames,
-      selectedSheet: targetSheet,
+      selectedSheet,
       rawRowsBySheet: rowsBySheet,
+      headers,
+      addressColIndex,
+      addressColName,
+      isAddressAutoDetected,
       parsedBiaRecords: parsed,
     };
   };
 
   // Core Matching Execution Helper
-  const executeMatching = (bias: BiaRecord[], his: HisRecord[], shouldHideUpload = false) => {
+  const executeMatching = (
+    bias: BiaRecord[],
+    his: HisRecord[],
+    shouldHideUpload = false,
+    currAddressPriority: AddressPriority = addressPriority
+  ) => {
     if (bias.length === 0 || his.length === 0) {
       setMatchedResults([]);
       setSummary(null);
@@ -125,7 +174,7 @@ export const App: React.FC = () => {
     }
 
     try {
-      const { matchedResults: results, summary: sum } = matchRecords(bias, his);
+      const { matchedResults: results, summary: sum } = matchRecords(bias, his, currAddressPriority);
       setMatchedResults(results);
       setSummary(sum);
 
@@ -159,7 +208,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(updated);
-        executeMatching(combinedBiaRecords, newHis, false);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi nạp file HIS:', err);
@@ -183,7 +232,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(newItems);
-        executeMatching(combinedBiaRecords, newHis, false);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file HIS:', err);
@@ -203,7 +252,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(updated);
-        executeMatching(combinedBiaRecords, newHis, false);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file HIS đơn lẻ:', err);
@@ -220,7 +269,35 @@ export const App: React.FC = () => {
 
     if (summary !== null) {
       const newHis = combineHisRecords(updated);
-      executeMatching(combinedBiaRecords, newHis, false);
+      executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+    }
+  };
+
+  // Handle Change Address Column on a specific HIS file
+  const handleChangeHisAddressCol = (fileId: string, colIndex: number) => {
+    const updated = hisFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
+        const rows = item.rawRowsBySheet[item.selectedSheet] || [];
+        const filePrefix = item.id;
+        const parsed = parseHisRows(rows, filePrefix, colIndex);
+        const headers = item.headers || [];
+        const addressColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
+        return {
+          ...item,
+          addressColIndex: colIndex,
+          addressColName,
+          isAddressAutoDetected: false,
+          parsedHisRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setHisFiles(updated);
+
+    if (summary !== null) {
+      const newHis = combineHisRecords(updated);
+      executeMatching(combinedBiaRecords, newHis, false, addressPriority);
     }
   };
 
@@ -239,7 +316,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newBia = combineBiaRecords(updated);
-        executeMatching(newBia, combinedHisRecords, false);
+        executeMatching(newBia, combinedHisRecords, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi nạp file Danh sách:', err);
@@ -263,7 +340,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newBia = combineBiaRecords(newItems);
-        executeMatching(newBia, combinedHisRecords, false);
+        executeMatching(newBia, combinedHisRecords, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file Danh sách:', err);
@@ -283,7 +360,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newBia = combineBiaRecords(updated);
-        executeMatching(newBia, combinedHisRecords, false);
+        executeMatching(newBia, combinedHisRecords, false, addressPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file Danh sách đơn lẻ:', err);
@@ -300,7 +377,7 @@ export const App: React.FC = () => {
 
     if (summary !== null) {
       const newBia = combineBiaRecords(updated);
-      executeMatching(newBia, combinedHisRecords, false);
+      executeMatching(newBia, combinedHisRecords, false, addressPriority);
     }
   };
 
@@ -309,11 +386,21 @@ export const App: React.FC = () => {
     const updated = biaFiles.map(item => {
       if (item.id === fileId && item.rawRowsBySheet) {
         const rows = item.rawRowsBySheet[sheetName] || [];
+        const { headers } = extractBiaHeaders(rows);
+        const detectedAddressIdx = detectAddressColumnIndex(headers);
+        const addressColIndex = detectedAddressIdx !== -1 ? detectedAddressIdx : -1;
+        const isAddressAutoDetected = detectedAddressIdx !== -1;
+        const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
+
         const filePrefix = item.id;
-        const parsed = parseBiaRows(rows, filePrefix);
+        const parsed = parseBiaRows(rows, filePrefix, addressColIndex);
         return {
           ...item,
           selectedSheet: sheetName,
+          headers,
+          addressColIndex,
+          addressColName,
+          isAddressAutoDetected,
           parsedBiaRecords: parsed,
           recordCount: parsed.length,
         };
@@ -324,7 +411,43 @@ export const App: React.FC = () => {
 
     if (summary !== null) {
       const newBia = combineBiaRecords(updated);
-      executeMatching(newBia, combinedHisRecords, false);
+      executeMatching(newBia, combinedHisRecords, false, addressPriority);
+    }
+  };
+
+  // Handle Change Address Column on a specific Bia file
+  const handleChangeBiaAddressCol = (fileId: string, colIndex: number) => {
+    const updated = biaFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
+        const rows = item.rawRowsBySheet[item.selectedSheet] || [];
+        const filePrefix = item.id;
+        const parsed = parseBiaRows(rows, filePrefix, colIndex);
+        const headers = item.headers || [];
+        const addressColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
+        return {
+          ...item,
+          addressColIndex: colIndex,
+          addressColName,
+          isAddressAutoDetected: false,
+          parsedBiaRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setBiaFiles(updated);
+
+    if (summary !== null) {
+      const newBia = combineBiaRecords(updated);
+      executeMatching(newBia, combinedHisRecords, false, addressPriority);
+    }
+  };
+
+  // Handle Address Priority Change
+  const handleChangeAddressPriority = (priority: AddressPriority) => {
+    setAddressPriority(priority);
+    if (summary !== null) {
+      executeMatching(combinedBiaRecords, combinedHisRecords, false, priority);
     }
   };
 
@@ -337,7 +460,7 @@ export const App: React.FC = () => {
 
     setIsProcessing(true);
     setTimeout(() => {
-      executeMatching(combinedBiaRecords, combinedHisRecords, true);
+      executeMatching(combinedBiaRecords, combinedHisRecords, true, addressPriority);
       setIsProcessing(false);
     }, 200);
   };
@@ -351,6 +474,7 @@ export const App: React.FC = () => {
       setSummary(null);
       setActiveFilter('all');
       setIsUploadVisible(true);
+      setAddressPriority('bia_first');
     }
   };
 
@@ -366,6 +490,7 @@ export const App: React.FC = () => {
     setMatchedResults(prev =>
       prev.map(r => {
         if (r.id === matchedRecordId) {
+          const resolvedAddress = r.diaChi || selectedHis.diaChi || '';
           return {
             ...r,
             maBA: selectedHis.maBA,
@@ -375,6 +500,7 @@ export const App: React.FC = () => {
             tuoi: selectedHis.tuoi,
             gioiTinh: selectedHis.gioiTinh,
             tenCty: r.tenCty || selectedHis.noiLamViec || '',
+            diaChi: resolvedAddress,
             matchedHis: selectedHis,
             matchStatus: 'manual_adjusted',
             warningNotes: [`Người dùng đã chọn thủ công: Mã BA ${selectedHis.maBA} - Mã BN ${selectedHis.maBN}`],
@@ -428,6 +554,7 @@ export const App: React.FC = () => {
             onReplaceHisFiles={handleReplaceHisFiles}
             onReplaceSingleHisFile={handleReplaceSingleHisFile}
             onRemoveHisFile={handleRemoveHisFile}
+            onChangeHisAddressCol={handleChangeHisAddressCol}
             biaFiles={biaFiles}
             biaRecordCount={combinedBiaRecords.length}
             onAddBiaFiles={handleAddBiaFiles}
@@ -435,6 +562,9 @@ export const App: React.FC = () => {
             onReplaceSingleBiaFile={handleReplaceSingleBiaFile}
             onRemoveBiaFile={handleRemoveBiaFile}
             onChangeBiaSheet={handleChangeBiaSheet}
+            onChangeBiaAddressCol={handleChangeBiaAddressCol}
+            addressPriority={addressPriority}
+            onChangeAddressPriority={handleChangeAddressPriority}
             isProcessing={isProcessing}
             onProcess={handleProcess}
             onClearImport={handleClearImport}
@@ -452,6 +582,7 @@ export const App: React.FC = () => {
               onReplaceHisFiles={handleReplaceHisFiles}
               onReplaceSingleHisFile={handleReplaceSingleHisFile}
               onRemoveHisFile={handleRemoveHisFile}
+              onChangeHisAddressCol={handleChangeHisAddressCol}
               biaFiles={biaFiles}
               biaRecordCount={combinedBiaRecords.length}
               onAddBiaFiles={handleAddBiaFiles}
@@ -459,6 +590,9 @@ export const App: React.FC = () => {
               onReplaceSingleBiaFile={handleReplaceSingleBiaFile}
               onRemoveBiaFile={handleRemoveBiaFile}
               onChangeBiaSheet={handleChangeBiaSheet}
+              onChangeBiaAddressCol={handleChangeBiaAddressCol}
+              addressPriority={addressPriority}
+              onChangeAddressPriority={handleChangeAddressPriority}
               isUploadVisible={isUploadVisible}
               onToggleUploadVisible={() => setIsUploadVisible(prev => !prev)}
               onClearImport={handleClearImport}

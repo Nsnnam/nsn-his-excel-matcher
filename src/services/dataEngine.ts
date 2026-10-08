@@ -1,6 +1,6 @@
 import * as XLSXModule from 'xlsx-js-style';
 const XLSX: any = (XLSXModule as any).default || XLSXModule;
-import { BiaRecord, HisRecord, MatchedRecord, ProcessingSummary, UploadedFileItem } from '../types';
+import { AddressPriority, BiaRecord, HisRecord, MatchedRecord, ProcessingSummary, UploadedFileItem } from '../types';
 
 /**
  * Remove Vietnamese diacritics and normalize string
@@ -155,27 +155,122 @@ export async function readExcelFileToRows(file: File): Promise<{ sheetNames: str
 }
 
 /**
- * Parse HIS File rows into HisRecord list
+ * Automatically detect the column index for Address across Vietnamese healthcare files
  */
-export function parseHisRows(rows: string[][], filePrefix: string = ''): HisRecord[] {
-  if (!rows || rows.length < 2) return [];
+export function detectAddressColumnIndex(headers: string[]): number {
+  if (!headers || headers.length === 0) return -1;
 
-  // Find header row containing "Mã BA" or "Tên bệnh nhân"
+  // 1. Priority 1: Specific 2-tier address in Bia list ("ĐC 2 Cấp", "ĐC 2cấp", "Địa chỉ 2 cấp")
+  let idx = headers.findIndex(h => /đc\s*2\s*cấp|đc\s*2cấp|địa\s*chỉ\s*2\s*cấp/i.test(h));
+  if (idx !== -1) return idx;
+
+  // 2. Priority 2: Patient address in HIS ("Đ/c BN", "Địa chỉ BN", "Đ/c Bệnh nhân", "Địa chỉ bệnh nhân")
+  idx = headers.findIndex(h => /đ\/c\s*bn|địa\s*chỉ\s*bn|đ\/c\s*bệnh\s*nhân|địa\s*chỉ\s*bệnh\s*nhân/i.test(h));
+  if (idx !== -1) return idx;
+
+  // 3. Priority 3: Standard "Địa chỉ", "Địa chỉ chi tiết", "Đ/c", "ĐC", "Địa chỉ (sau sáp nhập)", "Địa chỉ liên hệ", "Địa chỉ thường trú"
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    // Exclude if it's explicitly company address
+    if (/công\s*ty|c\.?ty|cơ\s*quan|doanh\s*nghiệp|đơn\s*vị/i.test(text)) return false;
+    return /địa\s*chỉ|dia\s*chi|^đ\/c$|^đc$|^đ\/c\b|^đc\b/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 4. Priority 4: "Hộ khẩu", "HKTT", "Nơi ĐK HKTT", "Nơi cư trú", "Thường trú", "Nơi ở", "Tạm trú"
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    return /hộ\s*khẩu|hktt|nơi\s*(?:đk\s*)?hktt|nơi\s*cư\s*trú|thường\s*trú|tạm\s*trú|nơi\s*ở/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 5. Priority 5: "Quê quán", "Nguyên quán"
+  idx = headers.findIndex(h => /quê\s*quán|que\s*quan|nguyên\s*quán/i.test(h));
+  if (idx !== -1) return idx;
+
+  return -1;
+}
+
+/**
+ * Extract headers and header row index from a HIS sheet
+ */
+export function extractHisHeaders(rows: string[][]): { headers: string[]; headerIndex: number } {
+  if (!rows || rows.length === 0) return { headers: [], headerIndex: -1 };
   let headerIndex = -1;
   let headers: string[] = [];
 
   for (let i = 0; i < Math.min(10, rows.length); i++) {
-    const r = rows[i].map(c => normalizeText(c).toLowerCase());
+    const r = (rows[i] || []).map(c => normalizeText(c).toLowerCase());
     if (r.some(c => c.includes('mã ba') || c.includes('maba') || c.includes('tên bệnh nhân') || c.includes('ten benh nhan'))) {
       headerIndex = i;
-      headers = rows[i].map(c => normalizeText(c));
+      headers = (rows[i] || []).map(c => normalizeText(c));
       break;
     }
   }
 
   if (headerIndex === -1) {
     headerIndex = 0;
-    headers = rows[0].map(c => normalizeText(c));
+    headers = (rows[0] || []).map(c => normalizeText(c));
+  }
+
+  return { headers, headerIndex };
+}
+
+/**
+ * Extract headers and header row index from a Bia sheet
+ */
+export function extractBiaHeaders(rows: string[][]): { headers: string[]; headerIndex: number } {
+  if (!rows || rows.length === 0) return { headers: [], headerIndex: -1 };
+  let headerIndex = -1;
+  let headers: string[] = [];
+
+  for (let i = 0; i < Math.min(15, rows.length); i++) {
+    const r = (rows[i] || []).map(c => normalizeText(c).toLowerCase());
+    if (r.some(c => c === 'stt' || c === 'số tt' || c === 'số thứ tự') &&
+        r.some(c => c.includes('họ') || c.includes('ten') || c.includes('hovaten'))) {
+      headerIndex = i;
+      headers = (rows[i] || []).map(c => normalizeText(c));
+      break;
+    }
+  }
+
+  if (headerIndex === -1) {
+    for (let i = 0; i < Math.min(10, rows.length); i++) {
+      const r = (rows[i] || []).map(c => normalizeText(c).toLowerCase());
+      if (r.some(c => c === 'hovaten' || c === 'họ và tên' || c === 'họ tên' || c === 'tên')) {
+        headerIndex = i;
+        headers = (rows[i] || []).map(c => normalizeText(c));
+        break;
+      }
+    }
+  }
+
+  if (headerIndex === -1) {
+    headerIndex = 0;
+    headers = (rows[0] || []).map(c => normalizeText(c));
+  }
+
+  return { headers, headerIndex };
+}
+
+/**
+ * Parse HIS File rows into HisRecord list (supports custom address column index)
+ */
+export function parseHisRows(
+  rows: string[][],
+  filePrefix: string = '',
+  customAddressColIndex?: number
+): HisRecord[] {
+  if (!rows || rows.length < 2) return [];
+
+  const { headers, headerIndex } = extractHisHeaders(rows);
+
+  // Address column index: custom override or auto-detect
+  let diaChiIndex = -1;
+  if (customAddressColIndex !== undefined) {
+    diaChiIndex = customAddressColIndex;
+  } else {
+    diaChiIndex = detectAddressColumnIndex(headers);
   }
 
   // Column mapper
@@ -188,7 +283,7 @@ export function parseHisRows(rows: string[][], filePrefix: string = ''): HisReco
     gioiTinh: headers.findIndex(h => /giới\s*tính|gioi\s*tinh/i.test(h)),
     cccd: headers.findIndex(h => /cccd|cmt|căn\s*cước/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|điện\s*thoại/i.test(h)),
-    diaChi: headers.findIndex(h => /đ\/c|địa\s*chỉ|dia\s*chi/i.test(h)),
+    diaChi: diaChiIndex,
     noiLamViec: headers.findIndex(h => {
       const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
       if (['noilamviec', 'noilv', 'congty', 'tencongty', 'coquan', 'tencoquan', 'donvi', 'tendonvi', 'doanhnghiep', 'cty', 'tencty'].includes(clean)) {
@@ -213,7 +308,7 @@ export function parseHisRows(rows: string[][], filePrefix: string = ''): HisReco
     const gioiTinh = normalizeGender(colMap.gioiTinh !== -1 ? row[colMap.gioiTinh] : '');
     const cccd = colMap.cccd !== -1 ? normalizeText(row[colMap.cccd]) : '';
     const sdt = normalizePhone(colMap.sdt !== -1 ? row[colMap.sdt] : '');
-    const diaChi = colMap.diaChi !== -1 ? normalizeText(row[colMap.diaChi]) : '';
+    const diaChi = colMap.diaChi !== -1 && row[colMap.diaChi] !== undefined ? normalizeText(row[colMap.diaChi]) : '';
     const noiLamViec = colMap.noiLamViec !== -1 ? normalizeText(row[colMap.noiLamViec]) : '';
     const ngayTiepNhan = colMap.ngayTiepNhan !== -1 ? normalizeText(row[colMap.ngayTiepNhan]) : '';
 
@@ -256,28 +351,23 @@ export function parseHisRows(rows: string[][], filePrefix: string = ''): HisReco
 }
 
 /**
- * Parse Bia Sheet rows into BiaRecord list
+ * Parse Bia Sheet rows into BiaRecord list (supports custom address column index)
  */
-export function parseBiaRows(rows: string[][], filePrefix: string = ''): BiaRecord[] {
+export function parseBiaRows(
+  rows: string[][],
+  filePrefix: string = '',
+  customAddressColIndex?: number
+): BiaRecord[] {
   if (!rows || rows.length < 2) return [];
 
-  // Find header row containing "STT" and ("HOVATEN" or "Họ và tên")
-  let headerIndex = -1;
-  let headers: string[] = [];
+  const { headers, headerIndex } = extractBiaHeaders(rows);
 
-  for (let i = 0; i < Math.min(10, rows.length); i++) {
-    const r = rows[i].map(c => normalizeText(c).toLowerCase());
-    if (r.some(c => c === 'stt' || c === 'số tt' || c === 'số thứ tự') &&
-        r.some(c => c.includes('họ') || c.includes('ten') || c.includes('hovaten'))) {
-      headerIndex = i;
-      headers = rows[i].map(c => normalizeText(c));
-      break;
-    }
-  }
-
-  if (headerIndex === -1) {
-    headerIndex = 0;
-    headers = rows[0].map(c => normalizeText(c));
+  // Address column index: custom override or auto-detect
+  let diaChiIndex = -1;
+  if (customAddressColIndex !== undefined) {
+    diaChiIndex = customAddressColIndex;
+  } else {
+    diaChiIndex = detectAddressColumnIndex(headers);
   }
 
   const colMap = {
@@ -326,6 +416,14 @@ export function parseBiaRows(rows: string[][], filePrefix: string = ''): BiaReco
     const diaChi2Cap = colMap.dc2Cap !== -1 ? normalizeText(row[colMap.dc2Cap]) : '';
     const diaChiChiTiet = colMap.dcChiTiet !== -1 ? normalizeText(row[colMap.dcChiTiet]) : '';
     
+    // Determine address: if specific column chosen, use it; otherwise prefer 2-tier, then detailed
+    let resolvedDiaChi = '';
+    if (diaChiIndex !== -1 && row[diaChiIndex] !== undefined) {
+      resolvedDiaChi = normalizeText(row[diaChiIndex]);
+    } else {
+      resolvedDiaChi = diaChi2Cap || diaChiChiTiet;
+    }
+
     // Determine Department: if explicit "Bộ phận" column exists, use it; otherwise use "Nghề nghiệp"
     let boPhan = '';
     if (colMap.boPhan !== -1 && normalizeText(row[colMap.boPhan])) {
@@ -355,6 +453,7 @@ export function parseBiaRows(rows: string[][], filePrefix: string = ''): BiaReco
       gt,
       diaChiChiTiet,
       diaChi2Cap,
+      diaChi: resolvedDiaChi,
       ngheNghiep,
       boPhan,
       sdt,
@@ -437,7 +536,11 @@ export function isSameDobOrAge(dob1: string, dob2: string): boolean {
  * Rule: Cùng họ tên nhưng KHÁC ngày sinh/tuổi là 2 người khác nhau -> khớp chuẩn, bỏ qua cảnh báo.
  * Chỉ cảnh báo đối với trường hợp CÙNG HỌ TÊN VÀ CÙNG NGÀY THÁNG NĂM SINH (trùng lặp thực sự).
  */
-export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): {
+export function matchRecords(
+  biaRecords: BiaRecord[],
+  hisRecords: HisRecord[],
+  addressPriority: AddressPriority = 'bia_first'
+): {
   matchedResults: MatchedRecord[];
   summary: ProcessingSummary;
 } {
@@ -484,9 +587,6 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
     let matchedHis: HisRecord | null = null;
     let matchStatus: MatchedRecord['matchStatus'] = 'unmatched_bia';
     const warningNotes: string[] = [];
-
-    // Prioritize Địa chỉ: prefer ĐC 2Cấp, fallback to ĐC chi tiết
-    const finalAddress = bia.diaChi2Cap || bia.diaChiChiTiet;
 
     if (candidates.length === 0) {
       // 0 candidates on HIS
@@ -574,6 +674,32 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
       }
     }
 
+    // Xác định Địa chỉ (Hỗ trợ tự nhận diện ở cả 2 file HIS và Bìa, fallback thông minh giữa 2 file)
+    const biaAddr = normalizeText(bia.diaChi || bia.diaChi2Cap || bia.diaChiChiTiet);
+    const hisAddr = matchedHis ? normalizeText(matchedHis.diaChi) : '';
+
+    let finalAddress = '';
+    let addressSource: MatchedRecord['addressSource'] = 'none';
+
+    if (addressPriority === 'his_first') {
+      if (hisAddr) {
+        finalAddress = hisAddr;
+        addressSource = 'his';
+      } else if (biaAddr) {
+        finalAddress = biaAddr;
+        addressSource = 'bia';
+      }
+    } else {
+      // Default: 'bia_first' với fallback sang HIS nếu Bìa trống
+      if (biaAddr) {
+        finalAddress = biaAddr;
+        addressSource = 'bia';
+      } else if (hisAddr) {
+        finalAddress = hisAddr;
+        addressSource = 'his';
+      }
+    }
+
     matchedResults.push({
       id: `match_${bia.id}`,
       stt: String(bia.stt),
@@ -587,6 +713,7 @@ export function matchRecords(biaRecords: BiaRecord[], hisRecords: HisRecord[]): 
       sdt: bia.sdt,
       tenCty: finalCompany,
       diaChi: finalAddress,
+      addressSource,
       matchStatus,
       warningNotes,
       candidates,

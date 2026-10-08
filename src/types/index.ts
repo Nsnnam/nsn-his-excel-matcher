@@ -25,6 +25,7 @@ export interface BiaRecord {
   gt: string;
   diaChiChiTiet: string;
   diaChi2Cap: string;
+  diaChi: string;
   ngheNghiep: string;
   boPhan: string;
   sdt: string;
@@ -43,6 +44,8 @@ export type MatchStatus =
   | 'unmatched_bia'          // Có trong Bìa nhưng chưa tìm thấy trên HIS
   | 'manual_adjusted';       // Người dùng đã chỉnh sửa thủ công
 
+export type AddressPriority = 'bia_first' | 'his_first';
+
 export interface MatchedRecord {
   id: string;
   stt: string;
@@ -56,6 +59,7 @@ export interface MatchedRecord {
   sdt: string;
   tenCty: string;
   diaChi: string;
+  addressSource?: 'bia' | 'his' | 'none';
   
   matchStatus: MatchStatus;
   warningNotes: string[];
@@ -106,6 +110,10 @@ export interface UploadedFileItem {
   selectedSheet?: string;
   availableSheets?: string[];
   rawRowsBySheet?: Record<string, string[][]>;
+  headers?: string[];                // Danh sách tên cột của sheet đang chọn
+  addressColIndex?: number;          // Vị trí cột địa chỉ được chọn (-1 nếu không dùng)
+  addressColName?: string;           // Tên cột địa chỉ đang chọn
+  isAddressAutoDetected?: boolean;   // true nếu được hệ thống tự động phát hiện
   parsedHisRecords?: HisRecord[];
   parsedBiaRecords?: BiaRecord[];
 }

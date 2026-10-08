@@ -1,15 +1,15 @@
 {
   "name": "nsn-his-excel-matcher",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": false,
   "type": "module",
-  "description": "Ứng dụng ghép & chuẩn hóa dữ liệu khám sức khỏe từ VNPT-HIS và Danh sách Bìa sang File Mẫu Chuẩn NSN (Hỗ trợ nạp nhiều file, thay thế trực tiếp, cảnh báo trùng tên tuổi & Offline 100%)",
+  "description": "Ứng dụng ghép & chuẩn hóa dữ liệu khám sức khỏe từ VNPT-HIS và Danh sách Bìa sang File Mẫu Chuẩn NSN (Tự động nhận diện địa chỉ, nạp nhiều file, thay thế trực tiếp, cảnh báo trùng tên tuổi & Offline 100%)",
   "author": "Nguyễn Sơn Nam <akahimachi@gmail.com> (https://github.com/Nsnnam)",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:single": "tsc && vite build --config vite.singlefile.config.ts && node -e \"const fs=require('fs'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.4-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.3-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.2-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.0-offline.html');\"",
+    "build:single": "tsc && vite build --config vite.singlefile.config.ts && node -e \"const fs=require('fs'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.5-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.4-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.3-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.2-offline.html'); fs.copyFileSync('releases/index.html', 'releases/nsn-his-excel-matcher-v1.0.0-offline.html');\"",
     "preview": "vite preview"
   },
   "dependencies": {

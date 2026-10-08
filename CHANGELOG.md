@@ -2,6 +2,26 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.5] - 2026-10-08
+
+### Tính năng mới (Added) & Cải tiến (Changed)
+- **Tự động nhận diện cột Địa chỉ ở cả 2 nguồn (HIS & Bìa):**
+  - Quét và phát hiện thông minh cột Địa chỉ trên file kết xuất HIS (nhận diện các mẫu như `Đ/c BN`, `Đ/c`, `Địa chỉ`, `Hộ khẩu`, `HKTT`, `Thường trú`...).
+  - Quét và phát hiện thông minh cột Địa chỉ trên sheet Bìa (nhận diện `ĐC 2Cấp`, `Địa chỉ`, `ĐC`, `Địa chỉ (sau sáp nhập)`, `HKTT`... với cơ chế ưu tiên địa chỉ chi tiết hơn và loại trừ địa chỉ công ty).
+  - Gắn huy hiệu trạng thái nhận diện rõ ràng trên từng thẻ file (`📍 Đã nhận diện Đ/C` màu xanh lá hoặc `⚠️ Chưa có cột Đ/C` màu hổ phách).
+- **Hỗ trợ chọn cột Địa chỉ thủ công từ danh sách thả xuống:**
+  - Nếu file có tiêu đề đặc thù không tự động nhận diện được, hoặc người dùng muốn đổi sang cột địa chỉ khác, hệ thống cung cấp dropdown menu liệt kê toàn bộ cột trong sheet kèm chữ cái cột (A, B, C...) để chọn thủ công.
+  - Cập nhật trực tiếp trên từng file riêng lẻ.
+- **Tùy chọn thứ tự ưu tiên nguồn Địa chỉ linh hoạt:**
+  - Hỗ trợ 2 chế độ ưu tiên: `Ưu tiên Bìa (dự phòng HIS)` (mặc định) và `Ưu tiên HIS (dự phòng Bìa)`.
+  - Cơ chế fallback thông minh: Khi một hồ sơ có trường địa chỉ bị trống ở nguồn ưu tiên, hệ thống tự động lấy địa chỉ từ nguồn còn lại, đảm bảo dữ liệu cột `Địa Chỉ` ở file xuất `FileMauChuan_NsN.xlsx` đầy đủ nhất.
+  - Trên bảng kết quả, hiển thị nhãn phụ `HIS` nếu địa chỉ được lấy bổ sung từ nguồn HIS để người dùng dễ kiểm tra.
+- **Tích hợp đồng bộ ở cả 2 chế độ xem (Nạp file & Kết quả):**
+  - Cung cấp dropdown chọn cột và bộ chọn ưu tiên địa chỉ ngay tại giao diện nạp file ban đầu (`FileUploadSection`) lẫn thanh quản lý file sau khi xuất báo cáo (`ResultsFileManagerBar`).
+  - Tự động re-matching và làm mới bảng kết quả ngay lập tức khi thay đổi cấu hình địa chỉ mà không cần nạp lại file.
+
+---
+
 ## [1.0.4] - 2026-10-04
 
 ### Tính năng mới (Added) & Cải tiến (Changed)

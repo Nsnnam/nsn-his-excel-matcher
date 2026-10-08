@@ -260,8 +260,22 @@ export const DataTable: React.FC<DataTableProps> = ({
                       </td>
 
                       {/* 11. Địa Chỉ */}
-                      <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 truncate max-w-[260px]" title={r.diaChi}>
-                        {r.diaChi || '-'}
+                      <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 truncate max-w-[280px]" title={r.diaChi}>
+                        {r.diaChi ? (
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="truncate">{r.diaChi}</span>
+                            {r.addressSource === 'his' && (
+                              <span
+                                className="shrink-0 text-[9px] font-bold px-1 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200"
+                                title="Địa chỉ lấy tự động từ file HIS"
+                              >
+                                HIS
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 italic">-</span>
+                        )}
                       </td>
 
                       {/* Trạng thái & Thao tác */}

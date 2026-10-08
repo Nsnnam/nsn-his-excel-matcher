@@ -15,7 +15,8 @@ import {
   FileCheck,
   Building2,
   FolderSync,
-  Layers
+  Layers,
+  MapPin
 } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
@@ -57,7 +58,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             <div className="flex items-center space-x-2 text-sky-900">
               <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Hỗ trợ nạp dồn nhiều file, thay thế trực tiếp file ngay tại giao diện nạp và kết quả đối soát.
+                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động nhận diện cột Địa chỉ ở cả 2 file, chọn cột thủ công, nạp dồn nhiều file & thay thế trực tiếp.
               </span>
             </div>
             {onOpenHistory && (
@@ -72,10 +73,40 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             )}
           </div>
 
-          {/* Section 1: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4 MỚI) */}
+          {/* Section 1: Tự động nhận diện Địa chỉ & Chọn cột thủ công (v1.0.5 MỚI) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">1</span>
+              Tự Động Nhận Diện Địa Chỉ & Chọn Cột Thủ Công (v1.0.5)
+            </h4>
+            <div className="pl-6 space-y-2">
+              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1.5">
+                <div className="font-bold text-emerald-900 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  Cơ chế nhận diện & gán cột Địa chỉ thông minh:
+                </div>
+                <ul className="space-y-1 text-[11px] text-emerald-800 list-disc list-inside">
+                  <li>
+                    <strong>Tự động nhận diện ở cả 2 nguồn:</strong> File HIS (nhận diện các cột như <code>Đ/c BN</code>, <code>Địa chỉ</code>, <code>Hộ khẩu</code>, <code>HKTT</code>...) và File Bìa (nhận diện <code>ĐC 2Cấp</code>, <code>Địa chỉ</code>, <code>ĐC</code>, <code>Địa chỉ (sau sáp nhập)</code>...).
+                  </li>
+                  <li>
+                    <strong>Menu thả xuống chọn cột trực tiếp:</strong> Mỗi file được nạp đều có ô chọn cột Địa chỉ hiển thị tiêu đề và chỉ số cột (A, B, C...). Nếu file có cấu trúc đặc biệt không tự nhận diện được (báo nhãn màu hổ phách <code>⚠️ Chưa có cột Đ/C</code>), bạn chỉ cần chọn cột mong muốn trong danh sách thả xuống.
+                  </li>
+                  <li>
+                    <strong>Tùy chọn thứ tự ưu tiên:</strong> Bạn có thể linh hoạt chuyển đổi giữa <em>Ưu tiên Bìa (dự phòng HIS)</em> và <em>Ưu tiên HIS (dự phòng Bìa)</em>. Nếu một hồ sơ bị thiếu địa chỉ ở nguồn ưu tiên, hệ thống tự động bù trừ từ nguồn còn lại!
+                  </li>
+                  <li>
+                    <strong>Chỉnh sửa tức thì ở cả 2 giao diện:</strong> Có thể điều chỉnh cột địa chỉ và ưu tiên ngay tại giao diện nạp ban đầu hoặc thanh quản lý file sau khi đã ghép dữ liệu xong.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4) */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
               Nạp Nhiều File & Thay Thế Trực Tiếp (v1.0.4)
             </h4>
             <div className="pl-6 space-y-2">
@@ -102,10 +133,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 2: Chuẩn bị file */}
+          {/* Section 3: Chuẩn bị file */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
               Chuẩn Bị Định Dạng File Excel Đầu Vào
             </h4>
             <div className="pl-6 space-y-2">
@@ -131,10 +162,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 3: Nhận diện Tên công ty & Fallback từ HIS (v1.0.3) */}
+          {/* Section 4: Nhận diện Tên công ty & Fallback từ HIS (v1.0.3) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
               Nhận Diện Tên Công Ty & Tự Động Lấy Từ "Nơi Làm Việc" HIS
             </h4>
             <div className="pl-6 space-y-2">
@@ -158,10 +189,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 4: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
+          {/* Section 5: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">5</span>
               Quy Tắc Đối Soát Ngày Sinh / Tuổi & Cảnh Báo Trùng Tên
             </h4>
             <div className="pl-6 space-y-2">
@@ -193,10 +224,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 5: Xuất File Mẫu Chuẩn NSN */}
+          {/* Section 6: Xuất File Mẫu Chuẩn NSN */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">5</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">6</span>
               Xuất File Mẫu Chuẩn Cho In Tem Nhãn (BarTender & Mail Merge)
             </h4>
             <div className="pl-6 space-y-2">
