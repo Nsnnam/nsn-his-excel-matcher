@@ -155,6 +155,20 @@ export async function readExcelFileToRows(file: File): Promise<{ sheetNames: str
 }
 
 /**
+ * Get Excel-style column letter from 0-based column index (0 -> A, 1 -> B, 26 -> AA...)
+ */
+export function getExcelColLetter(colIndex: number): string {
+  if (colIndex < 0) return '';
+  let letter = '';
+  let temp = colIndex;
+  while (temp >= 0) {
+    letter = String.fromCharCode((temp % 26) + 65) + letter;
+    temp = Math.floor(temp / 26) - 1;
+  }
+  return letter;
+}
+
+/**
  * Automatically detect the column index for Address across Vietnamese healthcare files
  */
 export function detectAddressColumnIndex(headers: string[]): number {
@@ -168,24 +182,102 @@ export function detectAddressColumnIndex(headers: string[]): number {
   idx = headers.findIndex(h => /đ\/c\s*bn|địa\s*chỉ\s*bn|đ\/c\s*bệnh\s*nhân|địa\s*chỉ\s*bệnh\s*nhân/i.test(h));
   if (idx !== -1) return idx;
 
-  // 3. Priority 3: Standard "Địa chỉ", "Địa chỉ chi tiết", "Đ/c", "ĐC", "Địa chỉ (sau sáp nhập)", "Địa chỉ liên hệ", "Địa chỉ thường trú"
+  // 3. Priority 3: Standard Patient Address ("Địa chỉ", "Địa chỉ chi tiết", "Đ/c", "ĐC", "^DC$", "Địa chỉ (sau sáp nhập)", "Địa chỉ liên hệ", "Địa chỉ thường trú")
   idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
-    // Exclude if it's explicitly company address
-    if (/công\s*ty|c\.?ty|cơ\s*quan|doanh\s*nghiệp|đơn\s*vị/i.test(text)) return false;
-    return /địa\s*chỉ|dia\s*chi|^đ\/c$|^đc$|^đ\/c\b|^đc\b/i.test(text);
+    // Exclude if it's explicitly department or unit
+    if (/bộ\s*phận|phòng\s*ban|đơn\s*vị|don\s*vi/i.test(text)) return false;
+    // Exclude if it's pure company name
+    if (/^(?:tên\s*)?công\s*ty$|^(?:tên\s*)?c\.?ty$|^cty$|^cơ\s*quan$/i.test(text)) return false;
+    return /địa\s*chỉ|dia\s*chi|^đ\/c$|^đc$|^dc$|^đ\/c\b|^đc\b|^dc\b/i.test(text);
   });
   if (idx !== -1) return idx;
 
-  // 4. Priority 4: "Hộ khẩu", "HKTT", "Nơi ĐK HKTT", "Nơi cư trú", "Thường trú", "Nơi ở", "Tạm trú"
+  // 4. Priority 4: "Hộ khẩu", "HKTT", "Nơi ĐK HKTT", "Nơi cư trú", "Thường trú", "Nơi thường trú", "Tạm trú", "Nơi ở"
   idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
-    return /hộ\s*khẩu|hktt|nơi\s*(?:đk\s*)?hktt|nơi\s*cư\s*trú|thường\s*trú|tạm\s*trú|nơi\s*ở/i.test(text);
+    return /hộ\s*khẩu|hktt|nơi\s*(?:đk\s*)?hktt|nơi\s*cư\s*trú|thường\s*trú|nơi\s*thường\s*trú|tạm\s*trú|nơi\s*ở/i.test(text);
   });
   if (idx !== -1) return idx;
 
-  // 5. Priority 5: "Quê quán", "Nguyên quán"
+  // 5. Priority 5: Company address codes if sheet doesn't have personal address ("DCCTY", "ĐC CTY", "Địa chỉ công ty", "Địa chỉ cty")
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    return clean === 'dccty' || /đc\s*c\.?ty|đ\/c\s*c\.?ty|địa\s*chỉ\s*c\.?ty|địa\s*chỉ\s*công\s*ty/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 6. Priority 6: "Quê quán", "Nguyên quán"
   idx = headers.findIndex(h => /quê\s*quán|que\s*quan|nguyên\s*quán/i.test(h));
+  if (idx !== -1) return idx;
+
+  return -1;
+}
+
+/**
+ * Automatically detect the column index for Company Name across Vietnamese healthcare files
+ */
+export function detectCompanyColumnIndex(headers: string[]): number {
+  if (!headers || headers.length === 0) return -1;
+
+  // 1. Priority 1: Explicit Company / Agency headers (TEN C.TY, TÊN CÔNG TY, CÔNG TY, C.TY, CTY, CƠ QUAN, DOANH NGHIỆP)
+  let idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    if (['tencty', 'tenct', 'tencq', 'tencongty', 'tencoquan', 'congty', 'cty', 'coquan', 'doanhnghiep'].includes(clean)) {
+      return true;
+    }
+    return /^(?:tên\s*)?c\.?ty$|^(?:tên\s*)?công\s*ty$|^(?:tên\s*)?cơ\s*quan$|^(?:tên\s*)?doanh\s*nghiệp$/i.test(text)
+      || /tên\s*c\.?ty|tên\s*công\s*ty|tên\s*cơ\s*quan/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 2. Priority 2: Company address codes or secondary agency headers (DCCTY, ĐCCTY, Địa chỉ C.ty, Tên đơn vị)
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    if (clean === 'dccty' || clean === 'tendonvi') return true;
+    return /công\s*ty|c\.?ty|^cty$|^cq$|cơ\s*quan|doanh\s*nghiệp|dccty|đccty|địa\s*chỉ\s*c\.?ty|địa\s*chỉ\s*công\s*ty|tên\s*đơn\s*vị/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 3. Priority 3: Work place ("Nơi làm việc")
+  idx = headers.findIndex(h => /nơi\s*làm\s*việc|noi\s*lam\s*viec/i.test(h));
+  if (idx !== -1) return idx;
+
+  return -1;
+}
+
+/**
+ * Automatically detect the column index for Department / Unit across Vietnamese healthcare files
+ */
+export function detectDepartmentColumnIndex(headers: string[]): number {
+  if (!headers || headers.length === 0) return -1;
+
+  // 1. Priority 1: Explicit Department / Room / Team (BỘ PHẬN, PHÒNG BAN, KHOA, TỔ, ĐỘI, PHÂN XƯỞNG)
+  let idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    if (['bophan', 'bp', 'phongban', 'phong', 'khoa', 'phanxuong', 'xuong'].includes(clean)) return true;
+    return /bộ\s*phận|^bp$|phòng\s*ban|^phòng$|^khoa$|^tổ$|^đội$|^phân\s*xưởng$|^xưởng$/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 2. Priority 2: Unit / Division (DONVI, ĐƠN VỊ, ĐƠN VỊ CÔNG TÁC)
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    return clean === 'donvi' || clean === 'donvicongtac' || /đơn\s*vị/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 3. Priority 3: Job title / Profession / Position (CHUCDANH, CHỨC DANH, CHỨC VỤ, NGHỀ NGHIỆP, VỊ TRÍ)
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    return clean === 'chucdanh' || clean === 'chucvu' || clean === 'nghenghiep' || /chức\s*danh|chức\s*vụ|nghề\s*nghiệp|vị\s*trí/i.test(text);
+  });
   if (idx !== -1) return idx;
 
   return -1;
@@ -351,12 +443,14 @@ export function parseHisRows(
 }
 
 /**
- * Parse Bia Sheet rows into BiaRecord list (supports custom address column index)
+ * Parse Bia Sheet rows into BiaRecord list (supports custom address, company, and department column indices)
  */
 export function parseBiaRows(
   rows: string[][],
   filePrefix: string = '',
-  customAddressColIndex?: number
+  customAddressColIndex?: number,
+  customCompanyColIndex?: number,
+  customDepartmentColIndex?: number
 ): BiaRecord[] {
   if (!rows || rows.length < 2) return [];
 
@@ -370,6 +464,22 @@ export function parseBiaRows(
     diaChiIndex = detectAddressColumnIndex(headers);
   }
 
+  // Company column index: custom override or auto-detect
+  let companyIndex = -1;
+  if (customCompanyColIndex !== undefined) {
+    companyIndex = customCompanyColIndex;
+  } else {
+    companyIndex = detectCompanyColumnIndex(headers);
+  }
+
+  // Department column index: custom override or auto-detect
+  let deptIndex = -1;
+  if (customDepartmentColIndex !== undefined) {
+    deptIndex = customDepartmentColIndex;
+  } else {
+    deptIndex = detectDepartmentColumnIndex(headers);
+  }
+
   const colMap = {
     stt: headers.findIndex(h => /^stt$|^số\s*tt$|^số\s*thứ\s*tự$/i.test(h)),
     hoVaTen: headers.findIndex(h => /hovaten|họ\s*và\s*tên|họ\s*tên|tên/i.test(h)),
@@ -377,15 +487,15 @@ export function parseBiaRows(
     gt: headers.findIndex(h => /^gt$|giới\s*tính/i.test(h)),
     dc2Cap: headers.findIndex(h => /đc\s*2\s*cấp|đc\s*2cấp|địa\s*chỉ\s*2\s*cấp/i.test(h)),
     dcChiTiet: headers.findIndex(h => /^đc$|^địa\s*chỉ$|địa\s*chỉ\s*chi\s*tiết/i.test(h)),
-    boPhan: headers.findIndex(h => /bộ\s*phận|^bp$|phòng\s*ban/i.test(h)),
-    ngheNghiep: headers.findIndex(h => /nghề\s*nghiệp|nghenghiep|chức\s*vụ|vị\s*trí/i.test(h)),
+    boPhan: headers.findIndex(h => /bộ\s*phận|^bp$|phòng\s*ban|^phòng$|^khoa$|đơn\s*vị|^donvi$/i.test(h)),
+    ngheNghiep: headers.findIndex(h => /nghề\s*nghiệp|nghenghiep|chức\s*vụ|chức\s*danh|vị\s*trí/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|số\s*điện\s*thoại|điện\s*thoại/i.test(h)),
     tenCty: headers.findIndex(h => {
       const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (['tencty', 'cty', 'ct', 'cq', 'cqu', 'congty', 'tencongty', 'coquan', 'tencoquan', 'tencq', 'tenct', 'donvi', 'tendonvi', 'doanhnghiep', 'noilamviec', 'noilv'].includes(clean)) {
+      if (['tencty', 'cty', 'ct', 'cq', 'cqu', 'congty', 'tencongty', 'coquan', 'tencoquan', 'tencq', 'tenct', 'doanhnghiep'].includes(clean)) {
         return true;
       }
-      return /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|c\.?ty|^cty$|^c\.?t$|^c\.?q$|cơ\s*quan|co\s*quan|tên\s*cơ\s*quan|doanh\s*nghiệp|đơn\s*vị|don\s*vi|nơi\s*làm\s*việc|noi\s*lam\s*viec/i.test(h);
+      return /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|c\.?ty|^cty$|^c\.?t$|^c\.?q$|cơ\s*quan|co\s*quan|tên\s*cơ\s*quan|doanh\s*nghiệp/i.test(h);
     }),
     cccd: headers.findIndex(h => /cccd|cmt|số\s*cccd/i.test(h)),
   };
@@ -418,24 +528,33 @@ export function parseBiaRows(
     
     // Determine address: if specific column chosen, use it; otherwise prefer 2-tier, then detailed
     let resolvedDiaChi = '';
-    if (diaChiIndex !== -1 && row[diaChiIndex] !== undefined) {
+    if (diaChiIndex !== -1 && row[diaChiIndex] !== undefined && normalizeText(row[diaChiIndex])) {
       resolvedDiaChi = normalizeText(row[diaChiIndex]);
     } else {
       resolvedDiaChi = diaChi2Cap || diaChiChiTiet;
     }
 
-    // Determine Department: if explicit "Bộ phận" column exists, use it; otherwise use "Nghề nghiệp"
+    // Determine Department: if explicit deptIndex column chosen, use it; otherwise fallback to colMap
     let boPhan = '';
-    if (colMap.boPhan !== -1 && normalizeText(row[colMap.boPhan])) {
+    if (deptIndex !== -1 && row[deptIndex] !== undefined && normalizeText(row[deptIndex])) {
+      boPhan = normalizeText(row[deptIndex]);
+    } else if (colMap.boPhan !== -1 && normalizeText(row[colMap.boPhan])) {
       boPhan = normalizeText(row[colMap.boPhan]);
     } else if (colMap.ngheNghiep !== -1 && normalizeText(row[colMap.ngheNghiep])) {
       boPhan = normalizeText(row[colMap.ngheNghiep]);
     }
 
+    // Determine Company: if explicit companyIndex column chosen, use it; otherwise fallback to colMap / sheet metadata
+    let tenCty = '';
+    if (companyIndex !== -1 && row[companyIndex] !== undefined && normalizeText(row[companyIndex])) {
+      tenCty = normalizeText(row[companyIndex]);
+    } else {
+      const rawTenCty = colMap.tenCty !== -1 ? normalizeText(row[colMap.tenCty]) : '';
+      tenCty = rawTenCty || sheetLevelCompany;
+    }
+
     const ngheNghiep = colMap.ngheNghiep !== -1 ? normalizeText(row[colMap.ngheNghiep]) : '';
     const sdt = normalizePhone(colMap.sdt !== -1 ? row[colMap.sdt] : '');
-    const rawTenCty = colMap.tenCty !== -1 ? normalizeText(row[colMap.tenCty]) : '';
-    const tenCty = rawTenCty || sheetLevelCompany;
     const cccd = colMap.cccd !== -1 ? normalizeText(row[colMap.cccd]) : '';
 
     if (!hoVaTen && !stt) continue;

@@ -12,8 +12,11 @@ import {
   ChevronUp,
   FolderSync,
   Layers,
-  MapPin
+  MapPin,
+  Building2,
+  Briefcase
 } from 'lucide-react';
+import { getExcelColLetter } from '../services/dataEngine';
 import { AddressPriority, UploadedFileItem } from '../types';
 
 interface ResultsFileManagerBarProps {
@@ -33,6 +36,8 @@ interface ResultsFileManagerBarProps {
   onRemoveBiaFile: (fileId: string) => void;
   onChangeBiaSheet: (fileId: string, sheetName: string) => void;
   onChangeBiaAddressCol: (fileId: string, colIndex: number) => void;
+  onChangeBiaCompanyCol: (fileId: string, colIndex: number) => void;
+  onChangeBiaDepartmentCol: (fileId: string, colIndex: number) => void;
 
   addressPriority: AddressPriority;
   onChangeAddressPriority: (priority: AddressPriority) => void;
@@ -58,6 +63,8 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
   onRemoveBiaFile,
   onChangeBiaSheet,
   onChangeBiaAddressCol,
+  onChangeBiaCompanyCol,
+  onChangeBiaDepartmentCol,
   addressPriority,
   onChangeAddressPriority,
   isUploadVisible,
@@ -357,7 +364,7 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
                       <option value="-1">-- Không lấy địa chỉ file này --</option>
                       {f.headers && f.headers.map((h, hIdx) => (
                         <option key={hIdx} value={hIdx}>
-                          {h ? h : `[Cột ${hIdx + 1}]`}
+                          [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
                         </option>
                       ))}
                     </select>
@@ -487,44 +494,70 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
                   </div>
                 </div>
 
-                {/* Address Column selector for this Bia file */}
-                <div className="flex items-center justify-between gap-1.5 text-[10.5px] pt-1 border-t border-slate-100">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <span className="text-slate-400 font-medium shrink-0">Đ/C:</span>
+                {/* Columns Mapping for this Bia file (BP, C.ty, Đ/C) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10.5px] pt-1.5 border-t border-slate-100">
+                  {/* BP */}
+                  <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                      <Briefcase className="w-2.5 h-2.5 text-indigo-600" />
+                      BP:
+                    </span>
                     <select
-                      value={f.addressColIndex ?? -1}
-                      onChange={(e) => onChangeBiaAddressCol(f.id, Number(e.target.value))}
-                      className={`text-[10.5px] rounded px-1.5 py-0.5 font-medium cursor-pointer truncate max-w-[170px] ${
-                        f.addressColIndex !== undefined && f.addressColIndex >= 0
-                          ? 'bg-slate-50 border border-slate-200 text-slate-700'
-                          : 'bg-amber-50 border border-amber-300 text-amber-900 font-bold'
-                      }`}
-                      title="Chọn cột Địa chỉ cho file Danh sách này"
+                      value={f.departmentColIndex ?? -1}
+                      onChange={(e) => onChangeBiaDepartmentCol(f.id, Number(e.target.value))}
+                      className="text-[10px] bg-white border border-slate-200 rounded px-1 py-0.5 font-medium cursor-pointer truncate w-full"
+                      title="Chọn cột Bộ phận cho file Danh sách này"
                     >
-                      <option value="-1">-- Không lấy địa chỉ file này --</option>
+                      <option value="-1">-- Để trống --</option>
                       {f.headers && f.headers.map((h, hIdx) => (
                         <option key={hIdx} value={hIdx}>
-                          {h ? h : `[Cột ${hIdx + 1}]`}
+                          [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {f.addressColIndex !== undefined && f.addressColIndex >= 0 ? (
-                    f.isAddressAutoDetected ? (
-                      <span className="text-[9.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-bold shrink-0">
-                        ✓ Tự nhận diện
-                      </span>
-                    ) : (
-                      <span className="text-[9.5px] text-indigo-700 bg-indigo-50 px-1 py-0.2 rounded font-semibold shrink-0">
-                        Đã chọn
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-[9.5px] text-amber-800 bg-amber-100 px-1 py-0.2 rounded font-bold shrink-0">
-                      ⚠️ Chưa có
+                  {/* C.ty */}
+                  <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                      <Building2 className="w-2.5 h-2.5 text-indigo-600" />
+                      C.ty:
                     </span>
-                  )}
+                    <select
+                      value={f.companyColIndex ?? -1}
+                      onChange={(e) => onChangeBiaCompanyCol(f.id, Number(e.target.value))}
+                      className="text-[10px] bg-white border border-slate-200 rounded px-1 py-0.5 font-medium cursor-pointer truncate w-full"
+                      title="Chọn cột Tên Công Ty (nếu trống sẽ lấy từ HIS)"
+                    >
+                      <option value="-1">-- Lấy từ HIS --</option>
+                      {f.headers && f.headers.map((h, hIdx) => (
+                        <option key={hIdx} value={hIdx}>
+                          [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Đ/C */}
+                  <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5 text-indigo-600" />
+                      Đ/C:
+                    </span>
+                    <select
+                      value={f.addressColIndex ?? -1}
+                      onChange={(e) => onChangeBiaAddressCol(f.id, Number(e.target.value))}
+                      className="text-[10px] bg-white border border-slate-200 rounded px-1 py-0.5 font-medium cursor-pointer truncate w-full"
+                      title="Chọn cột Địa chỉ cho file Danh sách này"
+                    >
+                      <option value="-1">-- Bỏ qua --</option>
+                      {f.headers && f.headers.map((h, hIdx) => (
+                        <option key={hIdx} value={hIdx}>
+                          [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             ))}

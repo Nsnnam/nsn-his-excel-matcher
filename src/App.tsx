@@ -26,6 +26,8 @@ import {
   extractHisHeaders,
   extractBiaHeaders,
   detectAddressColumnIndex,
+  detectCompanyColumnIndex,
+  detectDepartmentColumnIndex,
   parseHisRows,
   parseBiaRows,
   combineHisRecords,
@@ -118,11 +120,13 @@ export const App: React.FC = () => {
     };
   };
 
-  // Helper: Parse a single Bia File to UploadedFileItem with auto address detection
+  // Helper: Parse a single Bia File to UploadedFileItem with auto address, company & department detection
   const parseSingleBiaFile = async (
     file: File,
     fileIndex: number,
     customAddressColIndex?: number,
+    customCompanyColIndex?: number,
+    customDepartmentColIndex?: number,
     targetSheetName?: string
   ): Promise<UploadedFileItem> => {
     const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
@@ -131,6 +135,7 @@ export const App: React.FC = () => {
     const rows = rowsBySheet[selectedSheet] || [];
     const { headers } = extractBiaHeaders(rows);
 
+    // 1. Address
     const detectedAddressIdx = detectAddressColumnIndex(headers);
     const addressColIndex = customAddressColIndex !== undefined
       ? customAddressColIndex
@@ -138,8 +143,24 @@ export const App: React.FC = () => {
     const isAddressAutoDetected = customAddressColIndex === undefined && detectedAddressIdx !== -1;
     const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
 
+    // 2. Company
+    const detectedCompanyIdx = detectCompanyColumnIndex(headers);
+    const companyColIndex = customCompanyColIndex !== undefined
+      ? customCompanyColIndex
+      : (detectedCompanyIdx !== -1 ? detectedCompanyIdx : -1);
+    const isCompanyAutoDetected = customCompanyColIndex === undefined && detectedCompanyIdx !== -1;
+    const companyColName = companyColIndex !== -1 && headers[companyColIndex] ? headers[companyColIndex] : '';
+
+    // 3. Department
+    const detectedDeptIdx = detectDepartmentColumnIndex(headers);
+    const departmentColIndex = customDepartmentColIndex !== undefined
+      ? customDepartmentColIndex
+      : (detectedDeptIdx !== -1 ? detectedDeptIdx : -1);
+    const isDepartmentAutoDetected = customDepartmentColIndex === undefined && detectedDeptIdx !== -1;
+    const departmentColName = departmentColIndex !== -1 && headers[departmentColIndex] ? headers[departmentColIndex] : '';
+
     const filePrefix = `bia_${Date.now()}_${fileIndex}`;
-    const parsed = parseBiaRows(rows, filePrefix, addressColIndex);
+    const parsed = parseBiaRows(rows, filePrefix, addressColIndex, companyColIndex, departmentColIndex);
 
     return {
       id: `bia_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -155,6 +176,12 @@ export const App: React.FC = () => {
       addressColIndex,
       addressColName,
       isAddressAutoDetected,
+      companyColIndex,
+      companyColName,
+      isCompanyAutoDetected,
+      departmentColIndex,
+      departmentColName,
+      isDepartmentAutoDetected,
       parsedBiaRecords: parsed,
     };
   };
@@ -387,13 +414,27 @@ export const App: React.FC = () => {
       if (item.id === fileId && item.rawRowsBySheet) {
         const rows = item.rawRowsBySheet[sheetName] || [];
         const { headers } = extractBiaHeaders(rows);
+
+        // 1. Address
         const detectedAddressIdx = detectAddressColumnIndex(headers);
         const addressColIndex = detectedAddressIdx !== -1 ? detectedAddressIdx : -1;
         const isAddressAutoDetected = detectedAddressIdx !== -1;
         const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
 
+        // 2. Company
+        const detectedCompanyIdx = detectCompanyColumnIndex(headers);
+        const companyColIndex = detectedCompanyIdx !== -1 ? detectedCompanyIdx : -1;
+        const isCompanyAutoDetected = detectedCompanyIdx !== -1;
+        const companyColName = companyColIndex !== -1 && headers[companyColIndex] ? headers[companyColIndex] : '';
+
+        // 3. Department
+        const detectedDeptIdx = detectDepartmentColumnIndex(headers);
+        const departmentColIndex = detectedDeptIdx !== -1 ? detectedDeptIdx : -1;
+        const isDepartmentAutoDetected = detectedDeptIdx !== -1;
+        const departmentColName = departmentColIndex !== -1 && headers[departmentColIndex] ? headers[departmentColIndex] : '';
+
         const filePrefix = item.id;
-        const parsed = parseBiaRows(rows, filePrefix, addressColIndex);
+        const parsed = parseBiaRows(rows, filePrefix, addressColIndex, companyColIndex, departmentColIndex);
         return {
           ...item,
           selectedSheet: sheetName,
@@ -401,6 +442,12 @@ export const App: React.FC = () => {
           addressColIndex,
           addressColName,
           isAddressAutoDetected,
+          companyColIndex,
+          companyColName,
+          isCompanyAutoDetected,
+          departmentColIndex,
+          departmentColName,
+          isDepartmentAutoDetected,
           parsedBiaRecords: parsed,
           recordCount: parsed.length,
         };
@@ -421,7 +468,7 @@ export const App: React.FC = () => {
       if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
         const rows = item.rawRowsBySheet[item.selectedSheet] || [];
         const filePrefix = item.id;
-        const parsed = parseBiaRows(rows, filePrefix, colIndex);
+        const parsed = parseBiaRows(rows, filePrefix, colIndex, item.companyColIndex, item.departmentColIndex);
         const headers = item.headers || [];
         const addressColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
         return {
@@ -429,6 +476,62 @@ export const App: React.FC = () => {
           addressColIndex: colIndex,
           addressColName,
           isAddressAutoDetected: false,
+          parsedBiaRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setBiaFiles(updated);
+
+    if (summary !== null) {
+      const newBia = combineBiaRecords(updated);
+      executeMatching(newBia, combinedHisRecords, false, addressPriority);
+    }
+  };
+
+  // Handle Change Company Column on a specific Bia file
+  const handleChangeBiaCompanyCol = (fileId: string, colIndex: number) => {
+    const updated = biaFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
+        const rows = item.rawRowsBySheet[item.selectedSheet] || [];
+        const filePrefix = item.id;
+        const parsed = parseBiaRows(rows, filePrefix, item.addressColIndex, colIndex, item.departmentColIndex);
+        const headers = item.headers || [];
+        const companyColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
+        return {
+          ...item,
+          companyColIndex: colIndex,
+          companyColName,
+          isCompanyAutoDetected: false,
+          parsedBiaRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setBiaFiles(updated);
+
+    if (summary !== null) {
+      const newBia = combineBiaRecords(updated);
+      executeMatching(newBia, combinedHisRecords, false, addressPriority);
+    }
+  };
+
+  // Handle Change Department Column on a specific Bia file
+  const handleChangeBiaDepartmentCol = (fileId: string, colIndex: number) => {
+    const updated = biaFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
+        const rows = item.rawRowsBySheet[item.selectedSheet] || [];
+        const filePrefix = item.id;
+        const parsed = parseBiaRows(rows, filePrefix, item.addressColIndex, item.companyColIndex, colIndex);
+        const headers = item.headers || [];
+        const departmentColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
+        return {
+          ...item,
+          departmentColIndex: colIndex,
+          departmentColName,
+          isDepartmentAutoDetected: false,
           parsedBiaRecords: parsed,
           recordCount: parsed.length,
         };
@@ -563,6 +666,8 @@ export const App: React.FC = () => {
             onRemoveBiaFile={handleRemoveBiaFile}
             onChangeBiaSheet={handleChangeBiaSheet}
             onChangeBiaAddressCol={handleChangeBiaAddressCol}
+            onChangeBiaCompanyCol={handleChangeBiaCompanyCol}
+            onChangeBiaDepartmentCol={handleChangeBiaDepartmentCol}
             addressPriority={addressPriority}
             onChangeAddressPriority={handleChangeAddressPriority}
             isProcessing={isProcessing}
@@ -591,6 +696,8 @@ export const App: React.FC = () => {
               onRemoveBiaFile={handleRemoveBiaFile}
               onChangeBiaSheet={handleChangeBiaSheet}
               onChangeBiaAddressCol={handleChangeBiaAddressCol}
+              onChangeBiaCompanyCol={handleChangeBiaCompanyCol}
+              onChangeBiaDepartmentCol={handleChangeBiaDepartmentCol}
               addressPriority={addressPriority}
               onChangeAddressPriority={handleChangeAddressPriority}
               isUploadVisible={isUploadVisible}

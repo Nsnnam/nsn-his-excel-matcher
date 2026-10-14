@@ -2,6 +2,26 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.6] - 2026-10-14
+
+### Tính năng mới (Added) & Sửa lỗi (Fixed)
+- **Khắc phục triệt để lỗi cột Bộ phận ghi là DONVI:**
+  - Xóa bỏ việc nhận diện nhầm `DONVI` thành `Tên C.ty` hoặc `Địa chỉ`.
+  - Thuật toán tự động phân định chính xác: `DONVI`/`Đơn vị` được đưa vào cột **Bộ phận** (`boPhan`), trong khi `TEN C.TY`/`Công ty` được đưa vào cột **Tên C.ty** (`tenCty`).
+- **Bổ sung Dropdown chọn cột Tên C.ty / Công ty cho từng file:**
+  - Hỗ trợ quét và tự động nhận diện các mẫu tiêu đề đa dạng: `TEN C.TY`, `Tên C.ty`, `Công ty`, `C.ty`, `CTY`, `Cơ quan`, `CQ`, `Doanh nghiệp`, `DCCTY`, `ĐCCTY`, `Địa chỉ C.ty`...
+  - Cung cấp dropdown chọn cột thủ công kèm ký hiệu cột Excel (`[A]`, `[B]`, `[M]...`).
+  - Tích hợp tùy chọn `-- Tự động lấy Nơi làm việc từ HIS --` khi file Bìa không có cột công ty.
+- **Bổ sung Dropdown chọn cột Bộ phận cho từng file:**
+  - Hỗ trợ quét và tự động nhận diện: `Bộ phận`, `BP`, `Phòng ban`, `Phòng`, `Khoa`, `Tổ`, `Đội`, `Đơn vị`, `DONVI`, `Chức danh`, `Nghề nghiệp`...
+  - Cho phép người dùng chuyển đổi linh hoạt qua dropdown hoặc chọn `-- Để trống --`.
+- **Hiển thị trực quan chữ cái cột Excel ([A], [B], [C]...) trên toàn bộ menu chọn cột:**
+  - Giúp người dùng đối chiếu tức thì với file Excel trên máy mà không cần đếm số thứ tự cột.
+- **Đồng bộ hóa trên cả 2 màn hình (Nạp file & Kết quả):**
+  - Điều chỉnh cấu hình cột Bộ phận, Tên C.ty, Địa chỉ trực tiếp ở cả `FileUploadSection` và `ResultsFileManagerBar`, tự động re-matching tức thì.
+
+---
+
 ## [1.0.5] - 2026-10-08
 
 ### Tính năng mới (Added) & Cải tiến (Changed)

@@ -114,6 +114,12 @@ export interface UploadedFileItem {
   addressColIndex?: number;          // Vị trí cột địa chỉ được chọn (-1 nếu không dùng)
   addressColName?: string;           // Tên cột địa chỉ đang chọn
   isAddressAutoDetected?: boolean;   // true nếu được hệ thống tự động phát hiện
+  companyColIndex?: number;          // Vị trí cột tên công ty được chọn (-1 nếu tự động lấy từ HIS hoặc không dùng)
+  companyColName?: string;           // Tên cột tên công ty đang chọn
+  isCompanyAutoDetected?: boolean;   // true nếu được hệ thống tự động phát hiện
+  departmentColIndex?: number;       // Vị trí cột bộ phận được chọn (-1 nếu không dùng)
+  departmentColName?: string;        // Tên cột bộ phận đang chọn
+  isDepartmentAutoDetected?: boolean;// true nếu được hệ thống tự động phát hiện
   parsedHisRecords?: HisRecord[];
   parsedBiaRecords?: BiaRecord[];
 }

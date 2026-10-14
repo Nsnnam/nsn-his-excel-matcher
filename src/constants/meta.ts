@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.5',
-  releaseDate: '2026-10-08',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện cột Địa chỉ ở cả 2 file, cho phép chọn cột thủ công nếu không tự nhận diện, nạp nhiều file / nạp dồn, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
+  version: '1.0.6',
+  releaseDate: '2026-10-14',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cho phép chọn cột Bộ phận (DONVI, Đơn vị, Phòng ban), Tên Công Ty (TEN C.TY, Công ty, C.ty, DCCTY...), và Địa Chỉ (ĐC, Đ/c, DC, Địa chỉ...), nạp nhiều file, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,18 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.6',
+      date: '2026-10-14',
+      features: [
+        'Khắc phục triệt để lỗi cột Bộ phận ghi là DONVI bị nhận diện nhầm thành Tên Công Ty hoặc Địa chỉ.',
+        'Tự động phân định chuẩn xác: DONVI/Đơn vị vào cột Bộ phận, và TEN C.TY/Công ty vào cột Tên C.ty.',
+        'Bổ sung dropdown chọn cột Tên C.ty / Công ty (hỗ trợ các biến thể công ty, c.ty, cty, cơ quan, dccty, địa chỉ cty...) kèm tùy chọn tự động lấy từ HIS.',
+        'Bổ sung dropdown chọn cột Bộ phận (hỗ trợ bộ phận, đơn vị, donvi, phòng ban, chức danh...) kèm tùy chọn để trống.',
+        'Hiển thị trực quan chữ cái cột Excel ([A], [B], [C]...) trên toàn bộ menu chọn cột giúp đối chiếu trực tiếp với file Excel gốc.',
+        'Tích hợp đầy đủ trên cả Giao diện nạp file ban đầu và Thanh quản lý file kết quả đối soát.',
+      ],
+    },
     {
       version: '1.0.5',
       date: '2026-10-08',

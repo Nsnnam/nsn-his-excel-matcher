@@ -12,9 +12,11 @@ import {
   X,
   Layers,
   FolderSync,
-  MapPin
+  MapPin,
+  Building2,
+  Briefcase
 } from 'lucide-react';
-import { exportToStandardExcel } from '../services/dataEngine';
+import { exportToStandardExcel, getExcelColLetter } from '../services/dataEngine';
 import { AddressPriority, UploadedFileItem } from '../types';
 
 interface FileUploadSectionProps {
@@ -36,6 +38,8 @@ interface FileUploadSectionProps {
   onRemoveBiaFile: (fileId: string) => void;
   onChangeBiaSheet: (fileId: string, sheetName: string) => void;
   onChangeBiaAddressCol: (fileId: string, colIndex: number) => void;
+  onChangeBiaCompanyCol: (fileId: string, colIndex: number) => void;
+  onChangeBiaDepartmentCol: (fileId: string, colIndex: number) => void;
 
   // Address Priority
   addressPriority: AddressPriority;
@@ -62,6 +66,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onRemoveBiaFile,
   onChangeBiaSheet,
   onChangeBiaAddressCol,
+  onChangeBiaCompanyCol,
+  onChangeBiaDepartmentCol,
   addressPriority,
   onChangeAddressPriority,
   isProcessing,
@@ -395,7 +401,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                           {fileItem.headers && fileItem.headers.length > 0 ? (
                             fileItem.headers.map((h, hIdx) => (
                               <option key={hIdx} value={hIdx}>
-                                {h ? h : `[Cột ${hIdx + 1}] (Trống)`}
+                                [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
                               </option>
                             ))
                           ) : (
@@ -587,52 +593,128 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       </div>
                     </div>
 
-                    {/* Address Column Mapping for this Bia file */}
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                        <span className="text-slate-500 font-semibold shrink-0 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-indigo-600" />
-                          Cột Địa chỉ:
-                        </span>
+                    {/* Columns Mapping for this Bia file (Bộ phận, Công ty, Địa chỉ) */}
+                    <div className="pt-2.5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
+                      {/* 1. Bộ phận */}
+                      <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
+                            <Briefcase className="w-3 h-3 text-indigo-600" />
+                            Cột Bộ phận:
+                          </span>
+                          {fileItem.departmentColIndex !== undefined && fileItem.departmentColIndex >= 0 ? (
+                            fileItem.isDepartmentAutoDetected ? (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Tự nhận
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                Đã chọn
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-1 py-0.2 rounded text-[9.5px] font-medium bg-slate-200 text-slate-600">
+                              Để trống
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={fileItem.departmentColIndex ?? -1}
+                          onChange={(e) => onChangeBiaDepartmentCol(fileItem.id, Number(e.target.value))}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full text-[10.5px] rounded px-1.5 py-1 font-medium bg-white border border-slate-200 text-slate-800 transition-all cursor-pointer truncate"
+                          title="Chọn cột đại diện cho Bộ phận / Đơn vị trong file Danh sách này"
+                        >
+                          <option value="-1">-- Không dùng / Để trống --</option>
+                          {fileItem.headers && fileItem.headers.map((h, hIdx) => (
+                            <option key={hIdx} value={hIdx}>
+                              [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 2. Tên Công Ty */}
+                      <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
+                            <Building2 className="w-3 h-3 text-indigo-600" />
+                            Cột Tên C.ty:
+                          </span>
+                          {fileItem.companyColIndex !== undefined && fileItem.companyColIndex >= 0 ? (
+                            fileItem.isCompanyAutoDetected ? (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Tự nhận
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                Đã chọn
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-1 py-0.2 rounded text-[9.5px] font-medium bg-sky-100 text-sky-800 border border-sky-200">
+                              Lấy từ HIS
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={fileItem.companyColIndex ?? -1}
+                          onChange={(e) => onChangeBiaCompanyCol(fileItem.id, Number(e.target.value))}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full text-[10.5px] rounded px-1.5 py-1 font-medium bg-white border border-slate-200 text-slate-800 transition-all cursor-pointer truncate"
+                          title="Chọn cột đại diện cho Tên Công Ty / Đơn vị trong file Danh sách này"
+                        >
+                          <option value="-1">-- Tự động lấy Nơi làm việc từ HIS --</option>
+                          {fileItem.headers && fileItem.headers.map((h, hIdx) => (
+                            <option key={hIdx} value={hIdx}>
+                              [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 3. Địa chỉ */}
+                      <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
+                            <MapPin className="w-3 h-3 text-indigo-600" />
+                            Cột Địa chỉ:
+                          </span>
+                          {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
+                            fileItem.isAddressAutoDetected ? (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Tự nhận
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                Đã chọn
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                              ⚠️ Chưa chọn
+                            </span>
+                          )}
+                        </div>
                         <select
                           value={fileItem.addressColIndex ?? -1}
                           onChange={(e) => onChangeBiaAddressCol(fileItem.id, Number(e.target.value))}
                           onClick={(e) => e.stopPropagation()}
-                          className={`text-[11px] rounded px-2 py-0.5 font-medium transition-all cursor-pointer truncate max-w-[220px] ${
+                          className={`w-full text-[10.5px] rounded px-1.5 py-1 font-medium transition-all cursor-pointer truncate ${
                             fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0
-                              ? 'bg-slate-50 border border-slate-200 text-slate-800'
-                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold ring-1 ring-amber-300'
+                              ? 'bg-white border border-slate-200 text-slate-800'
+                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold'
                           }`}
                           title="Chọn cột đại diện cho Địa chỉ trong file Danh sách này"
                         >
                           <option value="-1">-- Không lấy địa chỉ từ file này --</option>
-                          {fileItem.headers && fileItem.headers.length > 0 ? (
-                            fileItem.headers.map((h, hIdx) => (
-                              <option key={hIdx} value={hIdx}>
-                                {h ? h : `[Cột ${hIdx + 1}] (Trống)`}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="-1" disabled>Không có danh sách cột</option>
-                          )}
+                          {fileItem.headers && fileItem.headers.map((h, hIdx) => (
+                            <option key={hIdx} value={hIdx}>
+                              [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                            </option>
+                          ))}
                         </select>
                       </div>
-
-                      {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
-                        fileItem.isAddressAutoDetected ? (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                            ✓ Tự nhận diện
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
-                            Đã chọn
-                          </span>
-                        )
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
-                          ⚠️ Chưa chọn cột Đ/C
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}

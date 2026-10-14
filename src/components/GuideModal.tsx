@@ -16,7 +16,8 @@ import {
   Building2,
   FolderSync,
   Layers,
-  MapPin
+  MapPin,
+  Briefcase
 } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
@@ -58,7 +59,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             <div className="flex items-center space-x-2 text-sky-900">
               <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động nhận diện cột Địa chỉ ở cả 2 file, chọn cột thủ công, nạp dồn nhiều file & thay thế trực tiếp.
+                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động nhận diện & cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ; khắc phục triệt để lỗi DONVI.
               </span>
             </div>
             {onOpenHistory && (
@@ -73,40 +74,64 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             )}
           </div>
 
-          {/* Section 1: Tự động nhận diện Địa chỉ & Chọn cột thủ công (v1.0.5 MỚI) */}
+          {/* Section 1: Tự động nhận diện & Cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ (v1.0.6 MỚI) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">1</span>
-              Tự Động Nhận Diện Địa Chỉ & Chọn Cột Thủ Công (v1.0.5)
+              Tự Động Nhận Diện & Tùy Chọn Cột Bộ Phận, Tên C.ty, Địa Chỉ (v1.0.6)
             </h4>
             <div className="pl-6 space-y-2">
-              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1.5">
+              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-2">
                 <div className="font-bold text-emerald-900 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  Cơ chế nhận diện & gán cột Địa chỉ thông minh:
+                  <Briefcase className="w-4 h-4 text-emerald-600" />
+                  Cơ chế phân định 3 cột thông minh & triệt tiêu lỗi nhận diện sai:
                 </div>
-                <ul className="space-y-1 text-[11px] text-emerald-800 list-disc list-inside">
+                <ul className="space-y-1.5 text-[11px] text-emerald-800 list-disc list-inside">
                   <li>
-                    <strong>Tự động nhận diện ở cả 2 nguồn:</strong> File HIS (nhận diện các cột như <code>Đ/c BN</code>, <code>Địa chỉ</code>, <code>Hộ khẩu</code>, <code>HKTT</code>...) và File Bìa (nhận diện <code>ĐC 2Cấp</code>, <code>Địa chỉ</code>, <code>ĐC</code>, <code>Địa chỉ (sau sáp nhập)</code>...).
+                    <strong>Khắc phục triệt để lỗi DONVI:</strong> Cột ghi là <code>DONVI</code> hoặc <code>Đơn vị</code> nay được tự động đưa chính xác vào trường <strong>Bộ phận</strong> (thay vì bị nhầm sang Tên công ty hay Địa chỉ).
                   </li>
                   <li>
-                    <strong>Menu thả xuống chọn cột trực tiếp:</strong> Mỗi file được nạp đều có ô chọn cột Địa chỉ hiển thị tiêu đề và chỉ số cột (A, B, C...). Nếu file có cấu trúc đặc biệt không tự nhận diện được (báo nhãn màu hổ phách <code>⚠️ Chưa có cột Đ/C</code>), bạn chỉ cần chọn cột mong muốn trong danh sách thả xuống.
+                    <strong>Tự động nhận diện Tên Công Ty:</strong> Ưu tiên nhận diện đúng cột công ty như <code>TEN C.TY</code>, <code>Tên C.ty</code>, <code>Công ty</code>, <code>C.ty</code>, <code>Cơ quan</code>, <code>Doanh nghiệp</code>, <code>DCCTY</code>... Nếu file không có, hệ thống tự động lấy từ trường <em>"Nơi làm việc"</em> trên HIS.
                   </li>
                   <li>
-                    <strong>Tùy chọn thứ tự ưu tiên:</strong> Bạn có thể linh hoạt chuyển đổi giữa <em>Ưu tiên Bìa (dự phòng HIS)</em> và <em>Ưu tiên HIS (dự phòng Bìa)</em>. Nếu một hồ sơ bị thiếu địa chỉ ở nguồn ưu tiên, hệ thống tự động bù trừ từ nguồn còn lại!
+                    <strong>Menu thả xuống chọn cột trực tiếp cho từng file:</strong> Dưới mỗi file Danh sách nạp vào đều có 3 ô chọn trực tiếp: <strong>Cột Bộ phận</strong>, <strong>Cột Tên C.ty</strong>, và <strong>Cột Địa chỉ</strong>. Kèm theo hiển thị chữ cái cột Excel (<code>[A]</code>, <code>[B]</code>, <code>[F]</code>, <code>[K]</code>, <code>[M]...</code>) giúp bạn dễ dàng chọn lại nếu file có cấu trúc khác biệt.
                   </li>
                   <li>
-                    <strong>Chỉnh sửa tức thì ở cả 2 giao diện:</strong> Có thể điều chỉnh cột địa chỉ và ưu tiên ngay tại giao diện nạp ban đầu hoặc thanh quản lý file sau khi đã ghép dữ liệu xong.
+                    <strong>Cập nhật tức thì ở cả 2 màn hình:</strong> Có thể điều chỉnh cột ngay tại màn hình nạp file ban đầu hoặc trên thanh quản lý file sau khi đã ghép dữ liệu xong, hệ thống sẽ re-matching và làm mới kết quả tức thì.
                   </li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4) */}
+          {/* Section 2: Tự động nhận diện Địa chỉ & Ưu tiên nguồn */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
+              Quy Tắc Nhận Diện Địa Chỉ & Thứ Tự Ưu Tiên Nguồn (v1.0.5)
+            </h4>
+            <div className="pl-6 space-y-2">
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-sky-600" />
+                  Cơ chế ưu tiên & dự phòng địa chỉ:
+                </div>
+                <ul className="space-y-1 text-[11px] text-slate-600 list-disc list-inside">
+                  <li>
+                    <strong>Tự động nhận diện ở cả 2 nguồn:</strong> File HIS (các cột <code>Đ/c BN</code>, <code>Địa chỉ</code>, <code>Hộ khẩu</code>, <code>HKTT</code>...) và File Bìa (<code>ĐC 2Cấp</code>, <code>Địa chỉ</code>, <code>ĐC</code>, <code>Nơi thường trú</code>...).
+                  </li>
+                  <li>
+                    <strong>Tùy chọn thứ tự ưu tiên:</strong> Linh hoạt chuyển đổi giữa <em>Ưu tiên Bìa (dự phòng HIS)</em> và <em>Ưu tiên HIS (dự phòng Bìa)</em>. Nếu hồ sơ thiếu địa chỉ ở nguồn ưu tiên, hệ thống tự động bù trừ từ nguồn còn lại!
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4) */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
               Nạp Nhiều File & Thay Thế Trực Tiếp (v1.0.4)
             </h4>
             <div className="pl-6 space-y-2">
