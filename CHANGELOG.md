@@ -2,6 +2,24 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.7] - 2026-10-14
+
+### Tính năng mới (Added) & Tối ưu hóa (Enhanced)
+- **Tùy chọn Nguồn Nơi làm việc / Tên C.ty ưu tiên:**
+  - Bổ sung bộ chọn độ ưu tiên: `Ưu tiên Bìa (dự phòng HIS)` hoặc `Ưu tiên HIS (dự phòng Bìa)`.
+  - Hiển thị trực quan và đồng bộ ở cả Giao diện nạp file ban đầu và Thanh quản lý đối soát kết quả.
+  - Tự động fallback thông minh giữa 2 nguồn khi ô dữ liệu trống.
+- **Bổ sung Dropdown chọn Cột Nơi làm việc cho File HIS:**
+  - Tự động nhận diện chính xác các cột `Nơi làm việc`, `Nơi LV`, `Cơ quan`, `Công ty` trên file HIS.
+  - Cho phép người dùng chọn lại thủ công bất kỳ cột nào trong file HIS kèm ký hiệu cột Excel (`[A]`, `[B]`, `[O]...`) hoặc chọn `-- Không dùng --`.
+- **Tự động nhận diện chuẩn xác Địa chỉ công ty & Loại bỏ nhầm lẫn:**
+  - Nhận diện các cột địa chỉ công ty (`DCCTY`, `ĐCCTY`, `Địa chỉ công ty`, `Địa chỉ C.ty`, `ĐC Cty`...) vào trường Địa chỉ, loại bỏ triệt để khỏi bộ nhận diện Tên công ty.
+  - Cung cấp đầy đủ chỗ để chọn khi không tự động nhận diện: Cả File HIS (Nơi làm việc, Địa chỉ) và File Bìa (Bộ phận/Đơn vị, Nơi LV/Tên C.ty, Địa chỉ/ĐC Cty).
+- **Cơ chế Reactive Re-matching tức thì:**
+  - Thay đổi bất kỳ cột hoặc độ ưu tiên nào sẽ kích hoạt đối soát lại dữ liệu tự động ngay lập tức.
+
+---
+
 ## [1.0.6] - 2026-10-14
 
 ### Tính năng mới (Added) & Sửa lỗi (Fixed)

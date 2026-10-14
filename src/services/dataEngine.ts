@@ -1,6 +1,6 @@
 import * as XLSXModule from 'xlsx-js-style';
 const XLSX: any = (XLSXModule as any).default || XLSXModule;
-import { AddressPriority, BiaRecord, HisRecord, MatchedRecord, ProcessingSummary, UploadedFileItem } from '../types';
+import { AddressPriority, CompanyPriority, BiaRecord, HisRecord, MatchedRecord, ProcessingSummary, UploadedFileItem } from '../types';
 
 /**
  * Remove Vietnamese diacritics and normalize string
@@ -182,29 +182,29 @@ export function detectAddressColumnIndex(headers: string[]): number {
   idx = headers.findIndex(h => /đ\/c\s*bn|địa\s*chỉ\s*bn|đ\/c\s*bệnh\s*nhân|địa\s*chỉ\s*bệnh\s*nhân/i.test(h));
   if (idx !== -1) return idx;
 
-  // 3. Priority 3: Standard Patient Address ("Địa chỉ", "Địa chỉ chi tiết", "Đ/c", "ĐC", "^DC$", "Địa chỉ (sau sáp nhập)", "Địa chỉ liên hệ", "Địa chỉ thường trú")
+  // 3. Priority 3: Company address ("DCCTY", "ĐCCTY", "ĐC CTY", "Đ/C CTY", "Địa chỉ công ty", "Địa chỉ cty", "ĐC Công ty", "Địa chỉ cơ quan")
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    return clean === 'dccty' || clean === 'dccongty' || /đc\s*c\.?ty|đ\/c\s*c\.?ty|địa\s*chỉ\s*c\.?ty|địa\s*chỉ\s*công\s*ty|đc\s*công\s*ty|đ\/c\s*công\s*ty|địa\s*chỉ\s*cơ\s*quan/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 4. Priority 4: Standard Patient Address ("Địa chỉ", "Địa chỉ chi tiết", "Đ/c", "ĐC", "^DC$", "Địa chỉ (sau sáp nhập)", "Địa chỉ liên hệ", "Địa chỉ thường trú")
   idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
     // Exclude if it's explicitly department or unit
     if (/bộ\s*phận|phòng\s*ban|đơn\s*vị|don\s*vi/i.test(text)) return false;
-    // Exclude if it's pure company name
+    // Exclude if it's pure company name without address keywords
     if (/^(?:tên\s*)?công\s*ty$|^(?:tên\s*)?c\.?ty$|^cty$|^cơ\s*quan$/i.test(text)) return false;
     return /địa\s*chỉ|dia\s*chi|^đ\/c$|^đc$|^dc$|^đ\/c\b|^đc\b|^dc\b/i.test(text);
   });
   if (idx !== -1) return idx;
 
-  // 4. Priority 4: "Hộ khẩu", "HKTT", "Nơi ĐK HKTT", "Nơi cư trú", "Thường trú", "Nơi thường trú", "Tạm trú", "Nơi ở"
+  // 5. Priority 5: "Hộ khẩu", "HKTT", "Nơi ĐK HKTT", "Nơi cư trú", "Thường trú", "Nơi thường trú", "Tạm trú", "Nơi ở"
   idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
     return /hộ\s*khẩu|hktt|nơi\s*(?:đk\s*)?hktt|nơi\s*cư\s*trú|thường\s*trú|nơi\s*thường\s*trú|tạm\s*trú|nơi\s*ở/i.test(text);
-  });
-  if (idx !== -1) return idx;
-
-  // 5. Priority 5: Company address codes if sheet doesn't have personal address ("DCCTY", "ĐC CTY", "Địa chỉ công ty", "Địa chỉ cty")
-  idx = headers.findIndex(h => {
-    const text = normalizeText(h).toLowerCase();
-    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
-    return clean === 'dccty' || /đc\s*c\.?ty|đ\/c\s*c\.?ty|địa\s*chỉ\s*c\.?ty|địa\s*chỉ\s*công\s*ty/i.test(text);
   });
   if (idx !== -1) return idx;
 
@@ -224,6 +224,8 @@ export function detectCompanyColumnIndex(headers: string[]): number {
   // 1. Priority 1: Explicit Company / Agency headers (TEN C.TY, TÊN CÔNG TY, CÔNG TY, C.TY, CTY, CƠ QUAN, DOANH NGHIỆP)
   let idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
+    // Exclude any address keywords
+    if (/địa\s*chỉ|dia\s*chi|^đ\/c|^đc|^dc|dccty|đccty/i.test(text)) return false;
     const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
     if (['tencty', 'tenct', 'tencq', 'tencongty', 'tencoquan', 'congty', 'cty', 'coquan', 'doanhnghiep'].includes(clean)) {
       return true;
@@ -233,17 +235,51 @@ export function detectCompanyColumnIndex(headers: string[]): number {
   });
   if (idx !== -1) return idx;
 
-  // 2. Priority 2: Company address codes or secondary agency headers (DCCTY, ĐCCTY, Địa chỉ C.ty, Tên đơn vị)
+  // 2. Priority 2: Secondary agency headers (Tên đơn vị, Đơn vị công tác, Doanh nghiệp) - strictly EXCLUDE address terms
   idx = headers.findIndex(h => {
     const text = normalizeText(h).toLowerCase();
+    if (/địa\s*chỉ|dia\s*chi|^đ\/c|^đc|^dc|dccty|đccty/i.test(text)) return false;
     const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
-    if (clean === 'dccty' || clean === 'tendonvi') return true;
-    return /công\s*ty|c\.?ty|^cty$|^cq$|cơ\s*quan|doanh\s*nghiệp|dccty|đccty|địa\s*chỉ\s*c\.?ty|địa\s*chỉ\s*công\s*ty|tên\s*đơn\s*vị/i.test(text);
+    if (clean === 'tendonvi' || clean === 'donvicongtac') return true;
+    return /công\s*ty|c\.?ty|^cty$|^cq$|cơ\s*quan|doanh\s*nghiệp|tên\s*đơn\s*vị/i.test(text);
   });
   if (idx !== -1) return idx;
 
-  // 3. Priority 3: Work place ("Nơi làm việc")
-  idx = headers.findIndex(h => /nơi\s*làm\s*việc|noi\s*lam\s*viec/i.test(h));
+  // 3. Priority 3: Work place ("Nơi làm việc", "Nơi LV")
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    if (/địa\s*chỉ|dia\s*chi|^đ\/c|^đc|^dc/i.test(text)) return false;
+    return /nơi\s*làm\s*việc|noi\s*lam\s*viec|nơi\s*lv|noi\s*lv/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  return -1;
+}
+
+/**
+ * Automatically detect Workplace / Company column index in VNPT-HIS files
+ */
+export function detectHisWorkplaceColumnIndex(headers: string[]): number {
+  if (!headers || headers.length === 0) return -1;
+
+  // 1. Priority 1: Explicit "Nơi làm việc", "Noi lam viec", "Nơi LV", "Noi LV"
+  let idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    return clean === 'noilamviec' || clean === 'noilv' || /nơi\s*làm\s*việc|noi\s*lam\s*viec|nơi\s*lv|noi\s*lv/i.test(text);
+  });
+  if (idx !== -1) return idx;
+
+  // 2. Priority 2: Company / Agency / Unit headers in HIS (excluding patient address)
+  idx = headers.findIndex(h => {
+    const text = normalizeText(h).toLowerCase();
+    if (/địa\s*chỉ|dia\s*chi|^đ\/c|^đc|^dc|dccty|đccty/i.test(text)) return false;
+    const clean = removeDiacritics(text).replace(/[^a-z0-9]/g, '');
+    if (['congty', 'tencongty', 'coquan', 'tencoquan', 'donvi', 'tendonvi', 'doanhnghiep', 'cty', 'tencty'].includes(clean)) {
+      return true;
+    }
+    return /công\s*ty|c\.?ty|^cty$|^cơ\s*quan$|tên\s*cơ\s*quan|đơn\s*vị|doanh\s*nghiệp/i.test(text);
+  });
   if (idx !== -1) return idx;
 
   return -1;
@@ -346,12 +382,13 @@ export function extractBiaHeaders(rows: string[][]): { headers: string[]; header
 }
 
 /**
- * Parse HIS File rows into HisRecord list (supports custom address column index)
+ * Parse HIS File rows into HisRecord list (supports custom address and workplace column indices)
  */
 export function parseHisRows(
   rows: string[][],
   filePrefix: string = '',
-  customAddressColIndex?: number
+  customAddressColIndex?: number,
+  customWorkplaceColIndex?: number
 ): HisRecord[] {
   if (!rows || rows.length < 2) return [];
 
@@ -365,6 +402,14 @@ export function parseHisRows(
     diaChiIndex = detectAddressColumnIndex(headers);
   }
 
+  // Workplace column index: custom override or auto-detect
+  let noiLamViecIndex = -1;
+  if (customWorkplaceColIndex !== undefined) {
+    noiLamViecIndex = customWorkplaceColIndex;
+  } else {
+    noiLamViecIndex = detectHisWorkplaceColumnIndex(headers);
+  }
+
   // Column mapper
   const colMap = {
     maBA: headers.findIndex(h => /mã\s*ba|ma\s*ba/i.test(h)),
@@ -376,13 +421,7 @@ export function parseHisRows(
     cccd: headers.findIndex(h => /cccd|cmt|căn\s*cước/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|điện\s*thoại/i.test(h)),
     diaChi: diaChiIndex,
-    noiLamViec: headers.findIndex(h => {
-      const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (['noilamviec', 'noilv', 'congty', 'tencongty', 'coquan', 'tencoquan', 'donvi', 'tendonvi', 'doanhnghiep', 'cty', 'tencty'].includes(clean)) {
-        return true;
-      }
-      return /nơi\s*làm\s*việc|noi\s*lam\s*viec|nơi\s*lv|công\s*ty|cong\s*ty|cơ\s*quan|co\s*quan|đơn\s*vị|don\s*vi|doanh\s*nghiệp|c\.?ty/i.test(h);
-    }),
+    noiLamViec: noiLamViecIndex,
     ngayTiepNhan: headers.findIndex(h => /tiếp\s*nhận/i.test(h)),
   };
 
@@ -658,7 +697,8 @@ export function isSameDobOrAge(dob1: string, dob2: string): boolean {
 export function matchRecords(
   biaRecords: BiaRecord[],
   hisRecords: HisRecord[],
-  addressPriority: AddressPriority = 'bia_first'
+  addressPriority: AddressPriority = 'bia_first',
+  companyPriority: CompanyPriority = 'bia_first'
 ): {
   matchedResults: MatchedRecord[];
   summary: ProcessingSummary;
@@ -780,16 +820,27 @@ export function matchRecords(
       }
     }
 
-    // Xác định Tên công ty:
-    // 1. Ưu tiên lấy từ file sheet Bìa (cột Tên Cty, C.ty, Cơ quan, CT, CQ...)
-    // 2. Nếu không tìm thấy ở Bìa hoặc ô trống, lấy trực tiếp từ "Nơi làm việc" của hồ sơ HIS tương ứng (matchedHis.noiLamViec)
-    // 3. Nếu chưa khớp được trên HIS, lấy giá trị "Nơi làm việc" mặc định của cả đợt khám trên HIS
-    let finalCompany = normalizeText(bia.tenCty);
-    if (!finalCompany) {
-      if (matchedHis && normalizeText(matchedHis.noiLamViec)) {
-        finalCompany = normalizeText(matchedHis.noiLamViec);
-      } else if (hisDefaultCompany) {
-        finalCompany = hisDefaultCompany;
+    // Xác định Tên công ty / Nơi làm việc theo companyPriority:
+    // bia_first: Ưu tiên lấy từ Bìa, nếu trống mới lấy từ HIS (matchedHis.noiLamViec hoặc hisDefaultCompany)
+    // his_first: Ưu tiên lấy từ HIS (matchedHis.noiLamViec hoặc hisDefaultCompany), nếu trống mới lấy từ Bìa
+    const biaCompany = normalizeText(bia.tenCty);
+    const hisCompany = (matchedHis && normalizeText(matchedHis.noiLamViec))
+      ? normalizeText(matchedHis.noiLamViec)
+      : hisDefaultCompany;
+
+    let finalCompany = '';
+    if (companyPriority === 'his_first') {
+      if (hisCompany) {
+        finalCompany = hisCompany;
+      } else if (biaCompany) {
+        finalCompany = biaCompany;
+      }
+    } else {
+      // Mặc định: 'bia_first'
+      if (biaCompany) {
+        finalCompany = biaCompany;
+      } else if (hisCompany) {
+        finalCompany = hisCompany;
       }
     }
 

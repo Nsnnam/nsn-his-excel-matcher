@@ -17,7 +17,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { exportToStandardExcel, getExcelColLetter } from '../services/dataEngine';
-import { AddressPriority, UploadedFileItem } from '../types';
+import { AddressPriority, CompanyPriority, UploadedFileItem } from '../types';
 
 interface FileUploadSectionProps {
   // HIS Files
@@ -28,6 +28,7 @@ interface FileUploadSectionProps {
   onReplaceSingleHisFile: (fileId: string, newFile: File) => void;
   onRemoveHisFile: (fileId: string) => void;
   onChangeHisAddressCol: (fileId: string, colIndex: number) => void;
+  onChangeHisWorkplaceCol: (fileId: string, colIndex: number) => void;
 
   // Bia Files
   biaFiles: UploadedFileItem[];
@@ -41,9 +42,11 @@ interface FileUploadSectionProps {
   onChangeBiaCompanyCol: (fileId: string, colIndex: number) => void;
   onChangeBiaDepartmentCol: (fileId: string, colIndex: number) => void;
 
-  // Address Priority
+  // Priorities
   addressPriority: AddressPriority;
   onChangeAddressPriority: (priority: AddressPriority) => void;
+  companyPriority: CompanyPriority;
+  onChangeCompanyPriority: (priority: CompanyPriority) => void;
 
   isProcessing: boolean;
   onProcess: () => void;
@@ -58,6 +61,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onReplaceSingleHisFile,
   onRemoveHisFile,
   onChangeHisAddressCol,
+  onChangeHisWorkplaceCol,
   biaFiles,
   biaRecordCount,
   onAddBiaFiles,
@@ -70,6 +74,8 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   onChangeBiaDepartmentCol,
   addressPriority,
   onChangeAddressPriority,
+  companyPriority,
+  onChangeCompanyPriority,
   isProcessing,
   onProcess,
   onClearImport,
@@ -379,52 +385,93 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                       </div>
                     </div>
 
-                    {/* Address Column Mapping for this HIS file */}
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
-                      <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                        <span className="text-slate-500 font-semibold shrink-0 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-sky-600" />
-                          Cột Địa chỉ:
-                        </span>
+                    {/* 2-Column Column Mapping Grid for this HIS file */}
+                    <div className="pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      {/* 1. Nơi làm việc / Công ty trong HIS */}
+                      <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
+                            <Building2 className="w-3 h-3 text-sky-600" />
+                            Cột Nơi làm việc:
+                          </span>
+                          {fileItem.workplaceColIndex !== undefined && fileItem.workplaceColIndex >= 0 ? (
+                            fileItem.isWorkplaceAutoDetected ? (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Tự nhận
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+                                Đã chọn
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                              ⚠️ Chưa chọn
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={fileItem.workplaceColIndex ?? -1}
+                          onChange={(e) => onChangeHisWorkplaceCol(fileItem.id, Number(e.target.value))}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`w-full text-[10.5px] rounded px-1.5 py-1 font-medium transition-all cursor-pointer truncate ${
+                            fileItem.workplaceColIndex !== undefined && fileItem.workplaceColIndex >= 0
+                              ? 'bg-white border border-slate-200 text-slate-800'
+                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold'
+                          }`}
+                          title="Chọn cột đại diện cho Nơi làm việc / Công ty trong file HIS này"
+                        >
+                          <option value="-1">-- Không lấy nơi làm việc từ file này --</option>
+                          {fileItem.headers && fileItem.headers.map((h, hIdx) => (
+                            <option key={hIdx} value={hIdx}>
+                              [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 2. Địa chỉ bệnh nhân trong HIS */}
+                      <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
+                            <MapPin className="w-3 h-3 text-sky-600" />
+                            Cột Địa chỉ BN:
+                          </span>
+                          {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
+                            fileItem.isAddressAutoDetected ? (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                ✓ Tự nhận
+                              </span>
+                            ) : (
+                              <span className="px-1 py-0.2 rounded text-[9.5px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+                                Đã chọn
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-1 py-0.2 rounded text-[9.5px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                              ⚠️ Chưa chọn
+                            </span>
+                          )}
+                        </div>
                         <select
                           value={fileItem.addressColIndex ?? -1}
                           onChange={(e) => onChangeHisAddressCol(fileItem.id, Number(e.target.value))}
                           onClick={(e) => e.stopPropagation()}
-                          className={`text-[11px] rounded px-2 py-0.5 font-medium transition-all cursor-pointer truncate max-w-[220px] ${
+                          className={`w-full text-[10.5px] rounded px-1.5 py-1 font-medium transition-all cursor-pointer truncate ${
                             fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0
-                              ? 'bg-slate-50 border border-slate-200 text-slate-800'
-                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold ring-1 ring-amber-300'
+                              ? 'bg-white border border-slate-200 text-slate-800'
+                              : 'bg-amber-50 border border-amber-300 text-amber-900 font-semibold'
                           }`}
                           title="Chọn cột đại diện cho Địa chỉ trong file HIS này"
                         >
                           <option value="-1">-- Không lấy địa chỉ từ file này --</option>
-                          {fileItem.headers && fileItem.headers.length > 0 ? (
-                            fileItem.headers.map((h, hIdx) => (
-                              <option key={hIdx} value={hIdx}>
-                                [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
-                              </option>
-                            ))
-                          ) : (
-                            <option value="-1" disabled>Không có danh sách cột</option>
-                          )}
+                          {fileItem.headers && fileItem.headers.map((h, hIdx) => (
+                            <option key={hIdx} value={hIdx}>
+                              [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                            </option>
+                          ))}
                         </select>
                       </div>
-
-                      {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
-                        fileItem.isAddressAutoDetected ? (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                            ✓ Tự nhận diện
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 shrink-0">
-                            Đã chọn
-                          </span>
-                        )
-                      ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
-                          ⚠️ Chưa chọn cột Đ/C
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -595,12 +642,12 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 
                     {/* Columns Mapping for this Bia file (Bộ phận, Công ty, Địa chỉ) */}
                     <div className="pt-2.5 border-t border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
-                      {/* 1. Bộ phận */}
+                      {/* 1. Bộ phận / Đơn vị */}
                       <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
                             <Briefcase className="w-3 h-3 text-indigo-600" />
-                            Cột Bộ phận:
+                            Cột Bộ phận / Đơn vị:
                           </span>
                           {fileItem.departmentColIndex !== undefined && fileItem.departmentColIndex >= 0 ? (
                             fileItem.isDepartmentAutoDetected ? (
@@ -634,12 +681,12 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                         </select>
                       </div>
 
-                      {/* 2. Tên Công Ty */}
+                      {/* 2. Nơi làm việc / Tên Công Ty */}
                       <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
                             <Building2 className="w-3 h-3 text-indigo-600" />
-                            Cột Tên C.ty:
+                            Cột Nơi LV / Tên C.ty:
                           </span>
                           {fileItem.companyColIndex !== undefined && fileItem.companyColIndex >= 0 ? (
                             fileItem.isCompanyAutoDetected ? (
@@ -662,7 +709,7 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                           onChange={(e) => onChangeBiaCompanyCol(fileItem.id, Number(e.target.value))}
                           onClick={(e) => e.stopPropagation()}
                           className="w-full text-[10.5px] rounded px-1.5 py-1 font-medium bg-white border border-slate-200 text-slate-800 transition-all cursor-pointer truncate"
-                          title="Chọn cột đại diện cho Tên Công Ty / Đơn vị trong file Danh sách này"
+                          title="Chọn cột đại diện cho Nơi làm việc / Tên Công Ty trong file Danh sách này"
                         >
                           <option value="-1">-- Tự động lấy Nơi làm việc từ HIS --</option>
                           {fileItem.headers && fileItem.headers.map((h, hIdx) => (
@@ -673,12 +720,12 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
                         </select>
                       </div>
 
-                      {/* 3. Địa chỉ */}
+                      {/* 3. Địa chỉ / Địa chỉ công ty */}
                       <div className="flex flex-col gap-1 p-2 bg-slate-50/70 border border-slate-200 rounded-lg">
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600 font-semibold flex items-center gap-1 text-[10.5px]">
                             <MapPin className="w-3 h-3 text-indigo-600" />
-                            Cột Địa chỉ:
+                            Cột Địa chỉ / ĐC C.ty:
                           </span>
                           {fileItem.addressColIndex !== undefined && fileItem.addressColIndex >= 0 ? (
                             fileItem.isAddressAutoDetected ? (
@@ -748,35 +795,68 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
         </div>
       </div>
 
-      {/* Address Priority Options & Action Submit */}
-      <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100">
-        <div className="flex flex-wrap items-center gap-3 text-xs bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl text-slate-700">
-          <span className="font-bold text-slate-700 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-sky-600" />
-            Nguồn Địa chỉ ưu tiên:
-          </span>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
-            <input
-              type="radio"
-              name="addressPriority"
-              value="bia_first"
-              checked={addressPriority === 'bia_first'}
-              onChange={() => onChangeAddressPriority('bia_first')}
-              className="text-sky-600 focus:ring-sky-500 cursor-pointer"
-            />
-            <span className="font-medium">Ưu tiên Bìa (dự phòng HIS khi trống)</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
-            <input
-              type="radio"
-              name="addressPriority"
-              value="his_first"
-              checked={addressPriority === 'his_first'}
-              onChange={() => onChangeAddressPriority('his_first')}
-              className="text-sky-600 focus:ring-sky-500 cursor-pointer"
-            />
-            <span className="font-medium">Ưu tiên HIS (dự phòng Bìa khi trống)</span>
-          </label>
+      {/* Priority Options (Địa chỉ & Nơi làm việc) & Action Submit */}
+      <div className="mt-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-5 border-t border-slate-100">
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2.5">
+          {/* 1. Nguồn Địa chỉ ưu tiên */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-slate-700">
+            <span className="font-bold text-slate-700 flex items-center gap-1 text-[11.5px]">
+              <MapPin className="w-3.5 h-3.5 text-sky-600" />
+              Nguồn Đ/C ưu tiên:
+            </span>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
+              <input
+                type="radio"
+                name="addressPriority"
+                value="bia_first"
+                checked={addressPriority === 'bia_first'}
+                onChange={() => onChangeAddressPriority('bia_first')}
+                className="text-sky-600 focus:ring-sky-500 cursor-pointer"
+              />
+              <span className="font-medium">Bìa (dự phòng HIS)</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-sky-700">
+              <input
+                type="radio"
+                name="addressPriority"
+                value="his_first"
+                checked={addressPriority === 'his_first'}
+                onChange={() => onChangeAddressPriority('his_first')}
+                className="text-sky-600 focus:ring-sky-500 cursor-pointer"
+              />
+              <span className="font-medium">HIS (dự phòng Bìa)</span>
+            </label>
+          </div>
+
+          {/* 2. Nguồn Nơi làm việc / Tên C.ty ưu tiên */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-slate-700">
+            <span className="font-bold text-slate-700 flex items-center gap-1 text-[11.5px]">
+              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+              Nguồn Nơi LV / C.ty ưu tiên:
+            </span>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-indigo-700">
+              <input
+                type="radio"
+                name="companyPriority"
+                value="bia_first"
+                checked={companyPriority === 'bia_first'}
+                onChange={() => onChangeCompanyPriority('bia_first')}
+                className="text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span className="font-medium">Bìa (dự phòng HIS)</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer text-slate-700 hover:text-indigo-700">
+              <input
+                type="radio"
+                name="companyPriority"
+                value="his_first"
+                checked={companyPriority === 'his_first'}
+                onChange={() => onChangeCompanyPriority('his_first')}
+                className="text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span className="font-medium">HIS (dự phòng Bìa)</span>
+            </label>
+          </div>
         </div>
 
         <button

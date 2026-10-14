@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.6',
+  version: '1.0.7',
   releaseDate: '2026-10-14',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cho phép chọn cột Bộ phận (DONVI, Đơn vị, Phòng ban), Tên Công Ty (TEN C.TY, Công ty, C.ty, DCCTY...), và Địa Chỉ (ĐC, Đ/c, DC, Địa chỉ...), nạp nhiều file, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cung cấp đầy đủ tùy chọn cột Nơi làm việc, Tên C.ty, Địa chỉ công ty, Địa chỉ cá nhân, Bộ phận cho cả 2 file, hỗ trợ tùy chọn nguồn ưu tiên Nơi làm việc và Địa chỉ, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,17 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.7',
+      date: '2026-10-14',
+      features: [
+        'Bổ sung hoàn chỉnh bộ tùy chọn và chuyển đổi nguồn ưu tiên Nơi làm việc / Tên C.ty: "Ưu tiên Bìa (dự phòng HIS)" hoặc "Ưu tiên HIS (dự phòng Bìa)".',
+        'Bổ sung dropdown chọn "Cột Nơi làm việc" cho File HIS, tự động nhận diện chính xác các cột Nơi làm việc, Cơ quan, Đơn vị, Công ty trong file HIS.',
+        'Bổ sung dropdown chọn "Cột Địa chỉ / ĐC C.ty", tự động nhận diện chính xác các mã địa chỉ công ty (DCCTY, ĐCCTY, Địa chỉ công ty, ĐC Cty) và không bị nhầm lẫn sang Tên công ty.',
+        'Hiển thị trực quan và đồng bộ đầy đủ các bộ chọn cột trên cả 2 giao diện: Giao diện nạp file ban đầu và Thanh quản lý file đối soát kết quả.',
+        'Tự động re-matching dữ liệu tức thì khi thay đổi bất kỳ cột hoặc độ ưu tiên nào mà không cần nạp lại từ đầu.',
+      ],
+    },
     {
       version: '1.0.6',
       date: '2026-10-14',

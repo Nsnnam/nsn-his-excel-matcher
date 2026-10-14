@@ -59,7 +59,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             <div className="flex items-center space-x-2 text-sky-900">
               <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động nhận diện & cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ; khắc phục triệt để lỗi DONVI.
+                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tùy chọn & ưu tiên Nơi làm việc, Tên C.ty, Địa chỉ công ty cho cả 2 file HIS và Bìa.
               </span>
             </div>
             {onOpenHistory && (
@@ -74,30 +74,30 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             )}
           </div>
 
-          {/* Section 1: Tự động nhận diện & Cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ (v1.0.6 MỚI) */}
+          {/* Section 1: Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7 MỚI) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">1</span>
-              Tự Động Nhận Diện & Tùy Chọn Cột Bộ Phận, Tên C.ty, Địa Chỉ (v1.0.6)
+              Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7)
             </h4>
             <div className="pl-6 space-y-2">
               <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-2">
                 <div className="font-bold text-emerald-900 flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4 text-emerald-600" />
-                  Cơ chế phân định 3 cột thông minh & triệt tiêu lỗi nhận diện sai:
+                  <Building2 className="w-4 h-4 text-emerald-600" />
+                  Cơ chế tùy chọn & ưu tiên nguồn linh hoạt:
                 </div>
                 <ul className="space-y-1.5 text-[11px] text-emerald-800 list-disc list-inside">
                   <li>
-                    <strong>Khắc phục triệt để lỗi DONVI:</strong> Cột ghi là <code>DONVI</code> hoặc <code>Đơn vị</code> nay được tự động đưa chính xác vào trường <strong>Bộ phận</strong> (thay vì bị nhầm sang Tên công ty hay Địa chỉ).
+                    <strong>Tùy chọn Nguồn Nơi làm việc / Tên C.ty ưu tiên:</strong> Bạn có thể chủ động chọn <em>"Ưu tiên Bìa (dự phòng HIS khi trống)"</em> hoặc <em>"Ưu tiên HIS (dự phòng Bìa khi trống)"</em> ngay tại giao diện nạp file và trên thanh quản lý đối soát.
                   </li>
                   <li>
-                    <strong>Tự động nhận diện Tên Công Ty:</strong> Ưu tiên nhận diện đúng cột công ty như <code>TEN C.TY</code>, <code>Tên C.ty</code>, <code>Công ty</code>, <code>C.ty</code>, <code>Cơ quan</code>, <code>Doanh nghiệp</code>, <code>DCCTY</code>... Nếu file không có, hệ thống tự động lấy từ trường <em>"Nơi làm việc"</em> trên HIS.
+                    <strong>File HIS có thêm bộ chọn Cột Nơi làm việc:</strong> Tự động nhận diện chính xác các cột <code>Nơi làm việc</code>, <code>Nơi LV</code>, <code>Cơ quan</code>, <code>Công ty</code> trên HIS; nếu HIS có cột khác, bạn có thể tự chọn lại bằng menu thả xuống.
                   </li>
                   <li>
-                    <strong>Menu thả xuống chọn cột trực tiếp cho từng file:</strong> Dưới mỗi file Danh sách nạp vào đều có 3 ô chọn trực tiếp: <strong>Cột Bộ phận</strong>, <strong>Cột Tên C.ty</strong>, và <strong>Cột Địa chỉ</strong>. Kèm theo hiển thị chữ cái cột Excel (<code>[A]</code>, <code>[B]</code>, <code>[F]</code>, <code>[K]</code>, <code>[M]...</code>) giúp bạn dễ dàng chọn lại nếu file có cấu trúc khác biệt.
+                    <strong>File Bìa nhận diện chuẩn Địa chỉ công ty:</strong> Cột <code>DCCTY</code>, <code>ĐCCTY</code>, <code>Địa chỉ công ty</code> được phân định chuẩn xác vào trường Địa chỉ, không bị nhầm lẫn sang Tên công ty.
                   </li>
                   <li>
-                    <strong>Cập nhật tức thì ở cả 2 màn hình:</strong> Có thể điều chỉnh cột ngay tại màn hình nạp file ban đầu hoặc trên thanh quản lý file sau khi đã ghép dữ liệu xong, hệ thống sẽ re-matching và làm mới kết quả tức thì.
+                    <strong>Đầy đủ chỗ để chọn khi không tự động nhận diện:</strong> File HIS có 2 bộ chọn (Nơi làm việc, Địa chỉ BN); File Bìa có 3 bộ chọn (Bộ phận/Đơn vị, Nơi LV/Tên C.ty, Địa chỉ/ĐC Cty), kèm chữ cái cột Excel <code>[A]</code>, <code>[B]</code>, <code>[C]...</code>.
                   </li>
                 </ul>
               </div>

@@ -15,6 +15,7 @@ import { AboutModal } from './components/AboutModal';
 import { Footer } from './components/Footer';
 import {
   AddressPriority,
+  CompanyPriority,
   BiaRecord,
   HisRecord,
   MatchedRecord,
@@ -28,6 +29,7 @@ import {
   detectAddressColumnIndex,
   detectCompanyColumnIndex,
   detectDepartmentColumnIndex,
+  detectHisWorkplaceColumnIndex,
   parseHisRows,
   parseBiaRows,
   combineHisRecords,
@@ -59,8 +61,9 @@ export const App: React.FC = () => {
   const [hisFiles, setHisFiles] = useState<UploadedFileItem[]>([]);
   const [biaFiles, setBiaFiles] = useState<UploadedFileItem[]>([]);
 
-  // Address Priority State (Default: prefer Bia, fallback to HIS)
+  // Priority States (Default: prefer Bia, fallback to HIS)
   const [addressPriority, setAddressPriority] = useState<AddressPriority>('bia_first');
+  const [companyPriority, setCompanyPriority] = useState<CompanyPriority>('bia_first');
 
   // Combined records (memoized for performance)
   const combinedHisRecords = useMemo(() => combineHisRecords(hisFiles), [hisFiles]);
@@ -81,17 +84,19 @@ export const App: React.FC = () => {
     setIsUnlocked(false);
   };
 
-  // Helper: Parse a single HIS File to UploadedFileItem with auto address detection
+  // Helper: Parse a single HIS File to UploadedFileItem with auto address and workplace detection
   const parseSingleHisFile = async (
     file: File,
     fileIndex: number,
-    customAddressColIndex?: number
+    customAddressColIndex?: number,
+    customWorkplaceColIndex?: number
   ): Promise<UploadedFileItem> => {
     const { rowsBySheet, sheetNames } = await readExcelFileToRows(file);
     const firstSheet = sheetNames[0] || '';
     const rows = rowsBySheet[firstSheet] || [];
     const { headers } = extractHisHeaders(rows);
 
+    // 1. Address
     const detectedAddressIdx = detectAddressColumnIndex(headers);
     const addressColIndex = customAddressColIndex !== undefined
       ? customAddressColIndex
@@ -99,8 +104,16 @@ export const App: React.FC = () => {
     const isAddressAutoDetected = customAddressColIndex === undefined && detectedAddressIdx !== -1;
     const addressColName = addressColIndex !== -1 && headers[addressColIndex] ? headers[addressColIndex] : '';
 
+    // 2. Workplace / Company in HIS
+    const detectedWorkplaceIdx = detectHisWorkplaceColumnIndex(headers);
+    const workplaceColIndex = customWorkplaceColIndex !== undefined
+      ? customWorkplaceColIndex
+      : (detectedWorkplaceIdx !== -1 ? detectedWorkplaceIdx : -1);
+    const isWorkplaceAutoDetected = customWorkplaceColIndex === undefined && detectedWorkplaceIdx !== -1;
+    const workplaceColName = workplaceColIndex !== -1 && headers[workplaceColIndex] ? headers[workplaceColIndex] : '';
+
     const filePrefix = `his_${Date.now()}_${fileIndex}`;
-    const parsed = parseHisRows(rows, filePrefix, addressColIndex);
+    const parsed = parseHisRows(rows, filePrefix, addressColIndex, workplaceColIndex);
 
     return {
       id: `his_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -116,6 +129,9 @@ export const App: React.FC = () => {
       addressColIndex,
       addressColName,
       isAddressAutoDetected,
+      workplaceColIndex,
+      workplaceColName,
+      isWorkplaceAutoDetected,
       parsedHisRecords: parsed,
     };
   };
@@ -191,7 +207,8 @@ export const App: React.FC = () => {
     bias: BiaRecord[],
     his: HisRecord[],
     shouldHideUpload = false,
-    currAddressPriority: AddressPriority = addressPriority
+    currAddressPriority: AddressPriority = addressPriority,
+    currCompanyPriority: CompanyPriority = companyPriority
   ) => {
     if (bias.length === 0 || his.length === 0) {
       setMatchedResults([]);
@@ -201,7 +218,12 @@ export const App: React.FC = () => {
     }
 
     try {
-      const { matchedResults: results, summary: sum } = matchRecords(bias, his, currAddressPriority);
+      const { matchedResults: results, summary: sum } = matchRecords(
+        bias,
+        his,
+        currAddressPriority,
+        currCompanyPriority
+      );
       setMatchedResults(results);
       setSummary(sum);
 
@@ -235,7 +257,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(updated);
-        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
       }
     } catch (err) {
       console.error('Lỗi nạp file HIS:', err);
@@ -259,7 +281,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(newItems);
-        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file HIS:', err);
@@ -279,7 +301,7 @@ export const App: React.FC = () => {
 
       if (summary !== null) {
         const newHis = combineHisRecords(updated);
-        executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+        executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
       }
     } catch (err) {
       console.error('Lỗi thay thế file HIS đơn lẻ:', err);
@@ -296,7 +318,7 @@ export const App: React.FC = () => {
 
     if (summary !== null) {
       const newHis = combineHisRecords(updated);
-      executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+      executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
     }
   };
 
@@ -306,7 +328,7 @@ export const App: React.FC = () => {
       if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
         const rows = item.rawRowsBySheet[item.selectedSheet] || [];
         const filePrefix = item.id;
-        const parsed = parseHisRows(rows, filePrefix, colIndex);
+        const parsed = parseHisRows(rows, filePrefix, colIndex, item.workplaceColIndex);
         const headers = item.headers || [];
         const addressColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
         return {
@@ -324,7 +346,35 @@ export const App: React.FC = () => {
 
     if (summary !== null) {
       const newHis = combineHisRecords(updated);
-      executeMatching(combinedBiaRecords, newHis, false, addressPriority);
+      executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
+    }
+  };
+
+  // Handle Change Workplace / Company Column on a specific HIS file
+  const handleChangeHisWorkplaceCol = (fileId: string, colIndex: number) => {
+    const updated = hisFiles.map(item => {
+      if (item.id === fileId && item.rawRowsBySheet && item.selectedSheet) {
+        const rows = item.rawRowsBySheet[item.selectedSheet] || [];
+        const filePrefix = item.id;
+        const parsed = parseHisRows(rows, filePrefix, item.addressColIndex, colIndex);
+        const headers = item.headers || [];
+        const workplaceColName = colIndex !== -1 && headers[colIndex] ? headers[colIndex] : '';
+        return {
+          ...item,
+          workplaceColIndex: colIndex,
+          workplaceColName,
+          isWorkplaceAutoDetected: false,
+          parsedHisRecords: parsed,
+          recordCount: parsed.length,
+        };
+      }
+      return item;
+    });
+    setHisFiles(updated);
+
+    if (summary !== null) {
+      const newHis = combineHisRecords(updated);
+      executeMatching(combinedBiaRecords, newHis, false, addressPriority, companyPriority);
     }
   };
 
@@ -550,7 +600,15 @@ export const App: React.FC = () => {
   const handleChangeAddressPriority = (priority: AddressPriority) => {
     setAddressPriority(priority);
     if (summary !== null) {
-      executeMatching(combinedBiaRecords, combinedHisRecords, false, priority);
+      executeMatching(combinedBiaRecords, combinedHisRecords, false, priority, companyPriority);
+    }
+  };
+
+  // Handle Company / Workplace Priority Change
+  const handleChangeCompanyPriority = (priority: CompanyPriority) => {
+    setCompanyPriority(priority);
+    if (summary !== null) {
+      executeMatching(combinedBiaRecords, combinedHisRecords, false, addressPriority, priority);
     }
   };
 
@@ -563,7 +621,7 @@ export const App: React.FC = () => {
 
     setIsProcessing(true);
     setTimeout(() => {
-      executeMatching(combinedBiaRecords, combinedHisRecords, true, addressPriority);
+      executeMatching(combinedBiaRecords, combinedHisRecords, true, addressPriority, companyPriority);
       setIsProcessing(false);
     }, 200);
   };
@@ -658,6 +716,7 @@ export const App: React.FC = () => {
             onReplaceSingleHisFile={handleReplaceSingleHisFile}
             onRemoveHisFile={handleRemoveHisFile}
             onChangeHisAddressCol={handleChangeHisAddressCol}
+            onChangeHisWorkplaceCol={handleChangeHisWorkplaceCol}
             biaFiles={biaFiles}
             biaRecordCount={combinedBiaRecords.length}
             onAddBiaFiles={handleAddBiaFiles}
@@ -670,6 +729,8 @@ export const App: React.FC = () => {
             onChangeBiaDepartmentCol={handleChangeBiaDepartmentCol}
             addressPriority={addressPriority}
             onChangeAddressPriority={handleChangeAddressPriority}
+            companyPriority={companyPriority}
+            onChangeCompanyPriority={handleChangeCompanyPriority}
             isProcessing={isProcessing}
             onProcess={handleProcess}
             onClearImport={handleClearImport}
@@ -688,6 +749,7 @@ export const App: React.FC = () => {
               onReplaceSingleHisFile={handleReplaceSingleHisFile}
               onRemoveHisFile={handleRemoveHisFile}
               onChangeHisAddressCol={handleChangeHisAddressCol}
+              onChangeHisWorkplaceCol={handleChangeHisWorkplaceCol}
               biaFiles={biaFiles}
               biaRecordCount={combinedBiaRecords.length}
               onAddBiaFiles={handleAddBiaFiles}
@@ -700,6 +762,8 @@ export const App: React.FC = () => {
               onChangeBiaDepartmentCol={handleChangeBiaDepartmentCol}
               addressPriority={addressPriority}
               onChangeAddressPriority={handleChangeAddressPriority}
+              companyPriority={companyPriority}
+              onChangeCompanyPriority={handleChangeCompanyPriority}
               isUploadVisible={isUploadVisible}
               onToggleUploadVisible={() => setIsUploadVisible(prev => !prev)}
               onClearImport={handleClearImport}

@@ -17,7 +17,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { getExcelColLetter } from '../services/dataEngine';
-import { AddressPriority, UploadedFileItem } from '../types';
+import { AddressPriority, CompanyPriority, UploadedFileItem } from '../types';
 
 interface ResultsFileManagerBarProps {
   hisFiles: UploadedFileItem[];
@@ -27,6 +27,7 @@ interface ResultsFileManagerBarProps {
   onReplaceSingleHisFile: (fileId: string, newFile: File) => void;
   onRemoveHisFile: (fileId: string) => void;
   onChangeHisAddressCol: (fileId: string, colIndex: number) => void;
+  onChangeHisWorkplaceCol: (fileId: string, colIndex: number) => void;
 
   biaFiles: UploadedFileItem[];
   biaRecordCount: number;
@@ -41,6 +42,8 @@ interface ResultsFileManagerBarProps {
 
   addressPriority: AddressPriority;
   onChangeAddressPriority: (priority: AddressPriority) => void;
+  companyPriority: CompanyPriority;
+  onChangeCompanyPriority: (priority: CompanyPriority) => void;
 
   isUploadVisible: boolean;
   onToggleUploadVisible: () => void;
@@ -55,6 +58,7 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
   onReplaceSingleHisFile,
   onRemoveHisFile,
   onChangeHisAddressCol,
+  onChangeHisWorkplaceCol,
   biaFiles,
   biaRecordCount,
   onAddBiaFiles,
@@ -67,6 +71,8 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
   onChangeBiaDepartmentCol,
   addressPriority,
   onChangeAddressPriority,
+  companyPriority,
+  onChangeCompanyPriority,
   isUploadVisible,
   onToggleUploadVisible,
   onClearImport,
@@ -231,6 +237,21 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
             </select>
           </div>
 
+          {/* Workplace / Company Priority Quick Switch in Results View */}
+          <div className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+            <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+            <span className="text-slate-500 font-medium">Ưu tiên Nơi LV:</span>
+            <select
+              value={companyPriority}
+              onChange={(e) => onChangeCompanyPriority(e.target.value as any)}
+              className="text-[11px] bg-white border border-slate-300 rounded px-1.5 py-0.5 text-slate-800 font-bold cursor-pointer"
+              title="Chọn ưu tiên nguồn lấy Nơi làm việc / Tên C.ty"
+            >
+              <option value="bia_first">Bìa trước (dự phòng HIS)</option>
+              <option value="his_first">HIS trước (dự phòng Bìa)</option>
+            </select>
+          </div>
+
           <button
             type="button"
             onClick={onToggleUploadVisible}
@@ -347,21 +368,21 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
                   </div>
                 </div>
 
-                {/* Address Column selector for this file */}
-                <div className="flex items-center justify-between gap-1.5 text-[10.5px] pt-1 border-t border-slate-100">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <span className="text-slate-400 font-medium shrink-0">Đ/C:</span>
+                {/* Columns Mapping for this HIS file (Nơi LV & Đ/C) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10.5px] pt-1.5 border-t border-slate-100">
+                  {/* Nơi LV */}
+                  <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                      <Building2 className="w-2.5 h-2.5 text-sky-600" />
+                      Nơi LV:
+                    </span>
                     <select
-                      value={f.addressColIndex ?? -1}
-                      onChange={(e) => onChangeHisAddressCol(f.id, Number(e.target.value))}
-                      className={`text-[10.5px] rounded px-1.5 py-0.5 font-medium cursor-pointer truncate max-w-[170px] ${
-                        f.addressColIndex !== undefined && f.addressColIndex >= 0
-                          ? 'bg-slate-50 border border-slate-200 text-slate-700'
-                          : 'bg-amber-50 border border-amber-300 text-amber-900 font-bold'
-                      }`}
-                      title="Chọn cột Địa chỉ cho file này"
+                      value={f.workplaceColIndex ?? -1}
+                      onChange={(e) => onChangeHisWorkplaceCol(f.id, Number(e.target.value))}
+                      className="text-[10px] bg-white border border-slate-200 rounded px-1 py-0.5 font-medium cursor-pointer truncate w-full"
+                      title="Chọn cột Nơi làm việc / Công ty cho file HIS này"
                     >
-                      <option value="-1">-- Không lấy địa chỉ file này --</option>
+                      <option value="-1">-- Không dùng --</option>
                       {f.headers && f.headers.map((h, hIdx) => (
                         <option key={hIdx} value={hIdx}>
                           [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
@@ -370,21 +391,26 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
                     </select>
                   </div>
 
-                  {f.addressColIndex !== undefined && f.addressColIndex >= 0 ? (
-                    f.isAddressAutoDetected ? (
-                      <span className="text-[9.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-bold shrink-0">
-                        ✓ Tự nhận diện
-                      </span>
-                    ) : (
-                      <span className="text-[9.5px] text-sky-700 bg-sky-50 px-1 py-0.2 rounded font-semibold shrink-0">
-                        Đã chọn
-                      </span>
-                    )
-                  ) : (
-                    <span className="text-[9.5px] text-amber-800 bg-amber-100 px-1 py-0.2 rounded font-bold shrink-0">
-                      ⚠️ Chưa có
+                  {/* Đ/C */}
+                  <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
+                    <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5 text-sky-600" />
+                      Đ/C:
                     </span>
-                  )}
+                    <select
+                      value={f.addressColIndex ?? -1}
+                      onChange={(e) => onChangeHisAddressCol(f.id, Number(e.target.value))}
+                      className="text-[10px] bg-white border border-slate-200 rounded px-1 py-0.5 font-medium cursor-pointer truncate w-full"
+                      title="Chọn cột Địa chỉ cho file HIS này"
+                    >
+                      <option value="-1">-- Không dùng --</option>
+                      {f.headers && f.headers.map((h, hIdx) => (
+                        <option key={hIdx} value={hIdx}>
+                          [{getExcelColLetter(hIdx)}] {h ? h : `(Trống)`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             ))}
@@ -517,11 +543,11 @@ export const ResultsFileManagerBar: React.FC<ResultsFileManagerBarProps> = ({
                     </select>
                   </div>
 
-                  {/* C.ty */}
+                  {/* Nơi LV / C.ty */}
                   <div className="flex items-center gap-1 min-w-0 bg-slate-50 p-1 rounded border border-slate-200">
                     <span className="text-slate-500 font-bold shrink-0 text-[10px] flex items-center gap-0.5">
                       <Building2 className="w-2.5 h-2.5 text-indigo-600" />
-                      C.ty:
+                      Nơi LV:
                     </span>
                     <select
                       value={f.companyColIndex ?? -1}

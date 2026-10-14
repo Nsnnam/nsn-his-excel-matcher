@@ -45,6 +45,7 @@ export type MatchStatus =
   | 'manual_adjusted';       // Người dùng đã chỉnh sửa thủ công
 
 export type AddressPriority = 'bia_first' | 'his_first';
+export type CompanyPriority = 'bia_first' | 'his_first';
 
 export interface MatchedRecord {
   id: string;
@@ -114,6 +115,9 @@ export interface UploadedFileItem {
   addressColIndex?: number;          // Vị trí cột địa chỉ được chọn (-1 nếu không dùng)
   addressColName?: string;           // Tên cột địa chỉ đang chọn
   isAddressAutoDetected?: boolean;   // true nếu được hệ thống tự động phát hiện
+  workplaceColIndex?: number;        // Dành cho HIS: Vị trí cột nơi làm việc / công ty (-1 nếu không dùng)
+  workplaceColName?: string;         // Tên cột nơi làm việc đang chọn
+  isWorkplaceAutoDetected?: boolean; // true nếu được hệ thống tự động phát hiện
   companyColIndex?: number;          // Vị trí cột tên công ty được chọn (-1 nếu tự động lấy từ HIS hoặc không dùng)
   companyColName?: string;           // Tên cột tên công ty đang chọn
   isCompanyAutoDetected?: boolean;   // true nếu được hệ thống tự động phát hiện
