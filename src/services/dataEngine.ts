@@ -61,6 +61,19 @@ export function normalizePhone(val: any): string {
 }
 
 /**
+ * Normalize CCCD / CMND: remove non-digits, pad 11-digit numbers with leading 0
+ */
+export function normalizeCccd(val: any): string {
+  if (!val) return '';
+  let str = String(val).replace(/[^\d]/g, '');
+  if (!str) return '';
+  if (str.length === 11 && !str.startsWith('0')) {
+    str = '0' + str;
+  }
+  return str;
+}
+
+/**
  * Normalize date of birth to DD/MM/YYYY or YYYY string
  */
 export function normalizeDob(val: any): string {
@@ -437,7 +450,7 @@ export function parseHisRows(
     const ngaySinh = normalizeDob(ngaySinhRaw);
     const tuoiRaw = colMap.tuoi !== -1 ? normalizeText(row[colMap.tuoi]) : '';
     const gioiTinh = normalizeGender(colMap.gioiTinh !== -1 ? row[colMap.gioiTinh] : '');
-    const cccd = colMap.cccd !== -1 ? normalizeText(row[colMap.cccd]) : '';
+    const cccd = colMap.cccd !== -1 ? normalizeCccd(row[colMap.cccd]) : '';
     const sdt = normalizePhone(colMap.sdt !== -1 ? row[colMap.sdt] : '');
     const diaChi = colMap.diaChi !== -1 && row[colMap.diaChi] !== undefined ? normalizeText(row[colMap.diaChi]) : '';
     const noiLamViec = colMap.noiLamViec !== -1 ? normalizeText(row[colMap.noiLamViec]) : '';
@@ -594,7 +607,7 @@ export function parseBiaRows(
 
     const ngheNghiep = colMap.ngheNghiep !== -1 ? normalizeText(row[colMap.ngheNghiep]) : '';
     const sdt = normalizePhone(colMap.sdt !== -1 ? row[colMap.sdt] : '');
-    const cccd = colMap.cccd !== -1 ? normalizeText(row[colMap.cccd]) : '';
+    const cccd = colMap.cccd !== -1 ? normalizeCccd(row[colMap.cccd]) : '';
 
     if (!hoVaTen && !stt) continue;
 
@@ -676,17 +689,113 @@ export function extractBirthYear(dobStr: string): number | null {
 }
 
 /**
+ * Parse date components from string (day, month, year)
+ */
+export interface ParsedDate {
+  day?: number;
+  month?: number;
+  year: number;
+  hasDay: boolean;
+  hasMonth: boolean;
+  raw: string;
+}
+
+export function parseDateComponents(dateStr: string): ParsedDate | null {
+  if (!dateStr) return null;
+  const str = dateStr.trim();
+  if (!str) return null;
+
+  // 1. Full date DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const dmy = str.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10);
+    const year = parseInt(dmy[3], 10);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      return { day, month, year, hasDay: true, hasMonth: true, raw: str };
+    }
+  }
+
+  // 2. Full date YYYY/MM/DD or YYYY-MM-DD
+  const ymd = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if (ymd) {
+    const year = parseInt(ymd[1], 10);
+    const month = parseInt(ymd[2], 10);
+    const day = parseInt(ymd[3], 10);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      return { day, month, year, hasDay: true, hasMonth: true, raw: str };
+    }
+  }
+
+  // 3. Month & Year MM/YYYY
+  const my = str.match(/^(\d{1,2})[-/.](\d{4})/);
+  if (my) {
+    const month = parseInt(my[1], 10);
+    const year = parseInt(my[2], 10);
+    if (month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      return { month, year, hasDay: false, hasMonth: true, raw: str };
+    }
+  }
+
+  // 4. Year only YYYY (e.g. 1997) or embedded year in string
+  const yMatch = str.match(/\b(19\d{2}|20\d{2})\b/);
+  if (yMatch) {
+    const year = parseInt(yMatch[1], 10);
+    return { year, hasDay: false, hasMonth: false, raw: str };
+  }
+
+  return null;
+}
+
+/**
+ * Score DOB match between two date strings:
+ * - 3: Exact full date match (same day, month, year)
+ * - 2: Exact month & year match (same month, year)
+ * - 1: Compatible year only (same birth year, at least one lacks day/month)
+ * - 0: Mismatch (different year OR same year but different day/month)
+ * - -1: Unknown (one or both missing)
+ */
+export function getDobMatchScore(dob1: string, dob2: string): number {
+  const p1 = parseDateComponents(dob1);
+  const p2 = parseDateComponents(dob2);
+  if (!p1 || !p2) return -1;
+
+  if (p1.year !== p2.year) {
+    return 0; // Mismatch: different birth year
+  }
+
+  // Same year: compare day and month if available
+  if (p1.hasDay && p1.hasMonth && p2.hasDay && p2.hasMonth) {
+    if (p1.day === p2.day && p1.month === p2.month) {
+      return 3; // EXACT FULL DATE MATCH
+    } else {
+      return 0; // SAME YEAR BUT DIFFERENT DAY OR MONTH -> MISMATCH (different persons)!
+    }
+  }
+
+  if (p1.hasMonth && p2.hasMonth) {
+    if (p1.month === p2.month) {
+      return 2; // EXACT MONTH & YEAR MATCH
+    } else {
+      return 0; // SAME YEAR BUT DIFFERENT MONTH -> MISMATCH!
+    }
+  }
+
+  // At least one lacks month/day, but birth year is identical
+  return 1; // COMPATIBLE YEAR
+}
+
+/**
  * Compare two DOB strings: true if identical date string or same birth year / age
+ * If both have day/month, checks that day/month match (returns false if different day/month)
  */
 export function isSameDobOrAge(dob1: string, dob2: string): boolean {
   if (!dob1 || !dob2) return false;
   const d1 = dob1.trim();
   const d2 = dob2.trim();
   if (d1 === d2) return true;
-  const y1 = extractBirthYear(d1);
-  const y2 = extractBirthYear(d2);
-  if (y1 && y2 && y1 === y2) return true;
-  return false;
+  const score = getDobMatchScore(d1, d2);
+  return score > 0;
 }
 
 /**
@@ -756,7 +865,8 @@ export function matchRecords(
       // Exactly 1 candidate on HIS
       const cand = candidates[0];
       if (cand.normalizedDob && bia.normalizedDob) {
-        if (isSameDobOrAge(cand.normalizedDob, bia.normalizedDob)) {
+        const score = getDobMatchScore(cand.normalizedDob, bia.normalizedDob);
+        if (score > 0 || score === -1) {
           matchedHis = cand;
           usedHisIds.add(matchedHis.id);
           matchStatus = 'exact_single';
@@ -776,36 +886,57 @@ export function matchRecords(
       }
     } else {
       // Multiple candidates with same Name & Gender on HIS!
-      // Compare Ngày sinh / Tuổi
-      const sameDobCandidates = candidates.filter((c) =>
-        isSameDobOrAge(c.normalizedDob, bia.normalizedDob)
-      );
+      // Score all candidates against bia.normalizedDob
+      // Priority 1: Exact full date match (same day, month, year - score 3)
+      // Priority 2: Exact month & year match (score 2)
+      // Priority 3: Compatible year only (score 1)
+      const scoredCandidates = candidates.map((c) => ({
+        cand: c,
+        score: getDobMatchScore(c.normalizedDob, bia.normalizedDob),
+      }));
 
-      if (sameDobCandidates.length === 1) {
-        // EXACTLY 1 candidate has this DOB/Age, other candidates have different DOBs
-        // => Cùng tên nhưng khác ngày sinh là 2 người khác nhau, KHỚP CHUẨN, BỎ QUA CẢNH BÁO!
-        matchedHis = sameDobCandidates[0];
+      const exactFullDate = scoredCandidates.filter((sc) => sc.score === 3).map((sc) => sc.cand);
+      const exactMonthYear = scoredCandidates.filter((sc) => sc.score === 2).map((sc) => sc.cand);
+      const compatibleYear = scoredCandidates.filter((sc) => sc.score === 1).map((sc) => sc.cand);
+
+      let matchingCandidates: HisRecord[] = [];
+      if (exactFullDate.length > 0) {
+        matchingCandidates = exactFullDate;
+      } else if (exactMonthYear.length > 0) {
+        matchingCandidates = exactMonthYear;
+      } else if (compatibleYear.length > 0) {
+        matchingCandidates = compatibleYear;
+      }
+
+      if (matchingCandidates.length === 1) {
+        // EXACTLY 1 candidate has this DOB/Age (or exact full date while others differ by day/month)
+        // => Cùng tên nhưng khác ngày tháng sinh là 2 người khác nhau, KHỚP CHUẨN 1-1, BỎ QUA CẢNH BÁO!
+        matchedHis = matchingCandidates[0];
         usedHisIds.add(matchedHis.id);
         matchStatus = 'exact_single';
         exactCount++;
-      } else if (sameDobCandidates.length > 1) {
+      } else if (matchingCandidates.length > 1) {
         // CÙNG HỌ TÊN VÀ CÙNG NGÀY THÁNG NĂM SINH / TUỔI!
         // Đây mới chính là trường hợp thực sự trùng lặp cần cảnh báo để kiểm tra!
-        let matchedByCccdOrPhone = sameDobCandidates.filter((c) => {
-          if (c.cccd && bia.cccd && c.cccd === bia.cccd) return true;
-          if (c.sdt && bia.sdt && c.sdt === bia.sdt) return true;
+        const matchedByCccdOrPhone = matchingCandidates.filter((c) => {
+          const cCccd = normalizeCccd(c.cccd);
+          const bCccd = normalizeCccd(bia.cccd);
+          if (cCccd && bCccd && cCccd === bCccd) return true;
+          const cSdt = normalizePhone(c.sdt);
+          const bSdt = normalizePhone(bia.sdt);
+          if (cSdt && bSdt && cSdt === bSdt) return true;
           return false;
         });
 
         if (matchedByCccdOrPhone.length === 1) {
           matchedHis = matchedByCccdOrPhone[0];
           usedHisIds.add(matchedHis.id);
-          warningNotes.push(`⚠️ CẢNH BÁO: Có ${sameDobCandidates.length} người CÙNG TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS (Đã tạm ghép theo CCCD/SĐT). Vui lòng kiểm tra lại!`);
+          warningNotes.push(`⚠️ CẢNH BÁO: Có ${matchingCandidates.length} người CÙNG TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS (Đã tạm ghép theo CCCD/SĐT). Vui lòng kiểm tra lại!`);
         } else {
-          const unused = sameDobCandidates.filter((c) => !usedHisIds.has(c.id));
-          matchedHis = unused[0] || sameDobCandidates[0];
+          const unused = matchingCandidates.filter((c) => !usedHisIds.has(c.id));
+          matchedHis = unused[0] || matchingCandidates[0];
           if (matchedHis) usedHisIds.add(matchedHis.id);
-          warningNotes.push(`🚨 CẢNH BÁO TRÙNG LẶP: Có ${sameDobCandidates.length} người CÙNG HỌ TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS. Vui lòng nhấp Hiệu chỉnh để xác nhận!`);
+          warningNotes.push(`🚨 CẢNH BÁO TRÙNG LẶP: Có ${matchingCandidates.length} người CÙNG HỌ TÊN VÀ CÙNG NGÀY SINH (${bia.ns}) trên HIS. Vui lòng nhấp Hiệu chỉnh để xác nhận!`);
         }
         matchStatus = 'warning_same_dob';
         warningSameDobCount++;

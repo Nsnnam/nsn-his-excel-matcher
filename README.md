@@ -4,13 +4,13 @@
 
 | Thông tin | Giá trị chuẩn |
 |---|---|
-| **Phiên bản** | `1.0.7` (Mới nhất) |
-| **Ngày phát hành** | 2026-10-14 |
+| **Phiên bản** | `1.0.8` (Mới nhất) |
+| **Ngày phát hành** | 2026-10-17 |
 | **Tác giả** | [Nguyễn Sơn Nam (Nsnnam / NamNS)](https://github.com/Nsnnam) |
 | **Múi giờ** | GMT+7 (`Asia/Ho_Chi_Minh`) |
 | **Kho mã nguồn** | [https://github.com/Nsnnam/nsn-his-excel-matcher](https://github.com/Nsnnam/nsn-his-excel-matcher) |
 | **Trang trực tuyến (Live)** | [https://nsnnam.github.io/nsn-his-excel-matcher/](https://nsnnam.github.io/nsn-his-excel-matcher/) |
-| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.7-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
+| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.8-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
 | **Khóa truy cập** | `namns` (Không phân biệt hoa thường) |
 | **Giấy phép** | MIT (Public Open-Source) |
 
@@ -22,7 +22,21 @@
 - Tích hợp màn hình khóa bảo mật khớp chuẩn với mã truy cập `namns` (chấp nhận chữ hoa, chữ thường, không dấu).
 - Bảo mật chữ ký SHA-256 nội bộ, lưu trạng thái mở khóa vào `localStorage` tiện lợi.
 
-### 2. Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7 MỚI)
+### 2. Thuật Toán Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8 MỚI)
+- **So sánh chi tiết cả ngày, tháng và năm sinh:**
+  - Tự động so sánh chi tiết ngày và tháng sinh khi phát hiện các trường hợp cùng họ tên và cùng năm sinh (cùng tuổi).
+  - Phân biệt chính xác từng cá nhân: Những người cùng năm sinh nhưng khác ngày/tháng sinh (ví dụ: `02/09/1997` vs `22/10/1997`) được xác định chuẩn xác là 2 cá nhân hoàn toàn khác nhau.
+  - Tự động xếp các trường hợp này vào nhóm **Khớp chuẩn 1-1** (`exact_single`), loại bỏ 100% cảnh báo trùng lặp sai.
+- **Hệ thống phân tầng ưu tiên độ khớp ngày sinh:**
+  - *Mức 1 (Exact Full Date)*: Khớp tuyệt đối cả ngày/tháng/năm (Điểm 3). Luôn được ưu tiên ghép trước.
+  - *Mức 2 (Exact Month/Year)*: Khớp tháng và năm sinh (Điểm 2).
+  - *Mức 3 (Compatible Year)*: Khớp năm sinh khi một hoặc hai nguồn chỉ ghi năm sinh hoặc tuổi (Điểm 1).
+  - *Không khớp (Mismatch)*: Khác năm sinh, hoặc cùng năm sinh nhưng khác ngày/tháng sinh (Điểm 0).
+- **Chuẩn hóa thông minh CCCD/CMND:**
+  - Bổ sung hàm `normalizeCccd`: Tự động đệm số 0 ở đầu cho mã CCCD 11 chữ số (do Excel định dạng số tự ý xóa số 0).
+  - Hỗ trợ đối soát và ghép nối 1-1 chính xác tuyệt đối qua CCCD/SĐT khi xảy ra trường hợp trùng cả họ tên và ngày sinh thực sự.
+
+### 3. Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7)
 - **Tùy chọn Nguồn Nơi làm việc / Tên C.ty ưu tiên:**
   - Hỗ trợ linh hoạt 2 chế độ: `Ưu tiên Bìa (dự phòng HIS)` và `Ưu tiên HIS (dự phòng Bìa)`.
   - Có mặt đồng bộ ở cả Giao diện nạp file ban đầu và Thanh quản lý file kết quả.
@@ -36,7 +50,7 @@
 - **Cơ chế Reactive Re-matching tức thì:**
   - Thay đổi bất kỳ cột hoặc độ ưu tiên nào sẽ kích hoạt đối soát lại dữ liệu tự động ngay lập tức.
 
-### 3. Tự động nhận diện & Cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ (v1.0.6)
+### 4. Tự động nhận diện & Cho phép chọn cột Bộ phận, Tên C.ty, Địa chỉ (v1.0.6)
 - **Khắc phục triệt để lỗi DONVI:**
   - Nhận diện chuẩn xác `DONVI` hoặc `Đơn vị` vào cột **Bộ phận** (thay vì bị nhầm sang Tên công ty hay Địa chỉ).
   - Cột `TEN C.TY` hoặc `Công ty` được nhận diện chuẩn xác vào **Tên C.ty**.
@@ -51,7 +65,7 @@
   - Toàn bộ menu chọn cột đều hiển thị chữ cái cột Excel (`[A]`, `[B]`, `[K]`, `[M]...`) giúp người dùng đối chiếu tức thì với file Excel trên máy tính.
   - Tích hợp đồng bộ ở cả 2 màn hình: Nạp file ban đầu (`FileUploadSection`) và Thanh quản lý file kết quả (`ResultsFileManagerBar`).
 
-### 4. Tự động nhận diện Địa chỉ ở cả 2 file & Thứ tự ưu tiên (v1.0.5)
+### 5. Tự động nhận diện Địa chỉ ở cả 2 file & Thứ tự ưu tiên (v1.0.5)
 - **Tự động nhận diện Địa chỉ ở cả 2 nguồn:**
   - File HIS: Nhận diện tự động cột `Đ/c BN`, `Đ/c`, `Địa chỉ`, `Hộ khẩu`, `HKTT`, `Thường trú`...
   - File Bìa: Nhận diện tự động cột `ĐC 2Cấp`, `Địa chỉ`, `ĐC`, `Địa chỉ (sau sáp nhập)`... với thuật toán ưu tiên địa chỉ chi tiết hơn và bỏ qua cột địa chỉ công ty.
@@ -60,36 +74,36 @@
 - **Tùy chọn thứ tự ưu tiên:** Hỗ trợ `Ưu tiên Bìa (dự phòng HIS)` và `Ưu tiên HIS (dự phòng Bìa)`. Tự động fallback lấy dữ liệu nguồn phụ nếu dòng bệnh nhân bị trống địa chỉ ở nguồn chính.
 - **Cập nhật tức thì ở cả 2 giao diện:** Cho phép tinh chỉnh cột và ưu tiên địa chỉ tại màn hình nạp file hoặc ngay trên thanh quản lý file sau khi đã ghép dữ liệu xong.
 
-### 5. Tự động nhận diện 2 File Excel đầu vào & Nạp nhiều file (v1.0.4)
+### 6. Tự động nhận diện 2 File Excel đầu vào & Nạp nhiều file (v1.0.4)
 - **File 1 (HIS):** Đọc trực tiếp file xuất danh sách tiếp nhận từ VNPT-HIS (hỗ trợ cả file `.xls` dạng bảng HTML hay `.xlsx`). Trích xuất chính xác `Mã BA`, `Mã BN`, `Tên bệnh nhân`, `Ngày sinh`, `Tuổi`, `Giới tính`, `CMT/CCCD`, `SĐT`, `Nơi làm việc`, `Địa chỉ`.
 - **File 2 (Danh sách KSK):** Tự động tìm và đọc sheet `Bìa` (hoặc cho phép chọn sheet bất kỳ). Trích xuất `STT`, `Họ và tên (HOVATEN)`, `Giới tính (GT)`, `Bộ phận (NGHENGHIEP)`, `SĐT`, `Tên C.ty`, `Địa Chỉ`.
 - **Nạp nhiều file & Live replace:** Hỗ trợ nạp dồn nhiều file HIS / Bìa cùng lúc, khử trùng lặp HIS thông minh, thay thế từng file hoặc toàn bộ trực tiếp.
 
-### 6. Tự động nhận diện Tên công ty & Fallback từ "Nơi làm việc" trên HIS (v1.0.3)
+### 7. Tự động nhận diện Tên công ty & Fallback từ "Nơi làm việc" trên HIS (v1.0.3)
 - **Nhận diện đa dạng trên sheet Bìa:** Hệ thống tự động bắt các tiêu đề cột như `TENCTY`, `Tên C.ty`, `C.ty`, `Cơ quan`, `CT`, `CQ`, `Đơn vị`, `Doanh nghiệp`... hoặc tiêu đề công ty ở phần đầu sheet.
 - **Tự động lấy từ "Nơi làm việc" trong HIS:** Nếu file sheet Bìa *không có cột tên công ty* hoặc *ô dữ liệu bị để trống*, hệ thống sẽ tự động lấy trực tiếp từ trường **"Nơi làm việc"** của hồ sơ bệnh nhân tương ứng trên HIS.
 - **Kế thừa toàn đợt khám:** Kể cả trường hợp hồ sơ chưa khớp được trên HIS, ứng dụng vẫn tự động gán tên cơ quan chung của đợt khám từ file HIS để file xuất ra không bao giờ bị khuyết cột *Tên C.ty*.
 
-### 7. Thuật toán ghép thông minh & Đối soát Tuổi / Ngày sinh (v1.0.1)
+### 8. Thuật toán ghép thông minh & Đối soát Tuổi / Ngày sinh (v1.0.1)
 - **Ghép cặp Tên & Giới tính:** Chuẩn hóa khoảng trắng đầu cuối, xóa ký tự ẩn, chuyển Unicode NFC.
 - **Cùng tên nhưng khác ngày sinh / tuổi:** Được xác định chắc chắn là 2 cá nhân khác nhau, tự động xếp vào nhóm **Khớp chuẩn 1-1** và **bỏ qua cảnh báo** để không làm phiền người dùng.
 - **Chỉ cảnh báo khi trùng thực sự:** Khi phát hiện các trường hợp cùng tên VÀ cùng ngày tháng năm sinh trên HIS, hệ thống bật cảnh báo màu vàng <span style="color:#b45309;font-weight:bold;">⚠️ Trùng tên tuổi</span>.
 - **Hiệu chỉnh thủ công 1 chạm:** Cho phép người dùng nhấp xem danh sách ứng viên trên HIS để chọn đúng hồ sơ hoặc nhập bổ sung Mã BA/BN.
 
-### 8. Tối ưu hóa luồng giao diện sau khi ghép (v1.0.2)
+### 9. Tối ưu hóa luồng giao diện sau khi ghép (v1.0.2)
 - **Tự động ẩn khung nạp 2 file đầu vào:** Sau khi ghép dữ liệu hoàn tất, 2 khung nạp file lớn sẽ tự động ẩn đi để nhường toàn bộ không gian màn hình cho Thống kê, Khối xuất Excel nổi bật và Bảng danh sách đối chiếu.
 - **Thanh điều khiển thu gọn:** Bổ sung nút **"Hiện khung nạp file"** để mở lại khi cần và nút **"Xóa DS (Clear Import)"** chuẩn NSN.
 
-### 9. Xuất File Mẫu Chuẩn NSN Cho In Tem BarTender & Mail Merge (v1.0.2)
+### 10. Xuất File Mẫu Chuẩn NSN Cho In Tem BarTender & Mail Merge (v1.0.2)
 - **Cố định tên file xuất:** Luôn xuất ra tên file `FileMauChuan_NsN.xlsx` (bỏ tiền tố timestamp ngày giờ) giúp phần mềm in tem **BarTender (.btw)** và tính năng **Word Mail Merge** tự động nhận diện cơ sở dữ liệu ngay lập tức mà không cần đổi tên thủ công.
 - **Khối biểu ngữ CTA tải file nổi bật:** Bố trí nút tải file siêu lớn, màu sắc bắt mắt ngay trên đầu bảng kết quả.
 - **11 cột tiêu chuẩn:**
   `STT` | `Mã BA` | `Mã BN` | `Tên bệnh nhân` | `Ngày sinh` | `Tuổi` | `Giới tính` | `Bộ phận` | `SĐT` | `Tên C.ty` | `Địa Chỉ`
 - **Định dạng General Text (@):** Toàn bộ 11 cột đều được thiết lập tường minh là kiểu văn bản (`t: 's'`, `z: '@'`), triệt tiêu hoàn toàn lỗi Excel nuốt số 0 ở đầu SĐT (ví dụ `0981...`) hoặc biến SĐT thành số khoa học.
 
-### 10. Hướng dẫn & Lịch sử phiên bản đa điểm chạm
-- Nút **"Hướng dẫn"** và **"Lịch sử (v1.0.7)"** hiển thị rõ ràng trên thanh Navbar và Footer.
-- Huy hiệu phiên bản `v1.0.7` có thể nhấp để mở trực tiếp nhật ký thay đổi qua từng phiên bản.
+### 11. Hướng dẫn & Lịch sử phiên bản đa điểm chạm
+- Nút **"Hướng dẫn"** và **"Lịch sử (v1.0.8)"** hiển thị rõ ràng trên thanh Navbar và Footer.
+- Huy hiệu phiên bản `v1.0.8` có thể nhấp để mở trực tiếp nhật ký thay đổi qua từng phiên bản.
 
 ---
 

@@ -2,6 +2,24 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.8] - 2026-10-17
+
+### Tính năng mới (Added) & Tối ưu hóa (Enhanced)
+- **Thuật toán đối soát ngày sinh phân tầng thông minh (Tiered DOB Matching):**
+  - Tự động so sánh chi tiết cả **ngày, tháng và năm sinh** khi phát hiện các trường hợp cùng họ tên và cùng năm sinh (cùng tuổi).
+  - Phân biệt chính xác từng cá nhân: Những người cùng năm sinh nhưng khác ngày/tháng sinh (ví dụ: `02/09/1997` vs `22/10/1997`) được xác định chắc chắn là 2 người hoàn toàn khác nhau.
+  - Tự động xếp các trường hợp này vào nhóm **Khớp chuẩn 1-1** (`exact_single`), loại bỏ 100% cảnh báo trùng lặp sai.
+- **Hệ thống phân tầng ưu tiên độ khớp ngày sinh:**
+  - *Mức 1 (Exact Full Date)*: Khớp tuyệt đối cả ngày/tháng/năm (Điểm 3). Luôn được ưu tiên ghép trước.
+  - *Mức 2 (Exact Month/Year)*: Khớp tháng và năm sinh (Điểm 2).
+  - *Mức 3 (Compatible Year)*: Khớp năm sinh khi một hoặc hai nguồn chỉ ghi năm sinh hoặc tuổi (Điểm 1).
+  - *Không khớp (Mismatch)*: Khác năm sinh, hoặc cùng năm sinh nhưng khác ngày/tháng sinh (Điểm 0).
+- **Chuẩn hóa thông minh CCCD/CMND:**
+  - Bổ sung hàm `normalizeCccd`: Tự động đệm số 0 ở đầu cho mã CCCD 11 chữ số (do Excel tự ý định dạng số và làm mất số 0).
+  - Giúp tự động ghép chính xác tuyệt đối qua CCCD/SĐT khi xảy ra trường hợp trùng cả họ tên và ngày sinh thực sự.
+
+---
+
 ## [1.0.7] - 2026-10-14
 
 ### Tính năng mới (Added) & Tối ưu hóa (Enhanced)

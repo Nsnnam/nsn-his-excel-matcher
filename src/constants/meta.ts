@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.7',
-  releaseDate: '2026-10-14',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cung cấp đầy đủ tùy chọn cột Nơi làm việc, Tên C.ty, Địa chỉ công ty, Địa chỉ cá nhân, Bộ phận cho cả 2 file, hỗ trợ tùy chọn nguồn ưu tiên Nơi làm việc và Địa chỉ, cảnh báo trùng tên tuổi và xuất Excel chuẩn General Text.',
+  version: '1.0.8',
+  releaseDate: '2026-10-17',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cung cấp đầy đủ tùy chọn cột Nơi làm việc, Tên C.ty, Địa chỉ công ty, Địa chỉ cá nhân, Bộ phận cho cả 2 file, hỗ trợ tùy chọn nguồn ưu tiên Nơi làm việc và Địa chỉ, thuật toán đối soát ngày sinh phân tầng thông minh theo ngày/tháng/năm và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,16 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.8',
+      date: '2026-10-17',
+      features: [
+        'Tối ưu hóa thuật toán đối soát ngày sinh phân tầng: Tự động so sánh chi tiết cả ngày và tháng sinh khi cùng năm sinh/tuổi để phân biệt chính xác từng cá nhân.',
+        'Loại bỏ cảnh báo sai: Các trường hợp cùng họ tên, cùng năm sinh (cùng tuổi) nhưng khác ngày/tháng sinh (ví dụ: 02/09/1997 vs 22/10/1997) được xác định chuẩn xác là 2 người khác nhau và tự động xếp vào "Khớp chuẩn 1-1" với 0 cảnh báo.',
+        'Chỉ kích hoạt cảnh báo trùng lặp khi thực sự trùng cả họ tên VÀ cùng ngày tháng năm sinh trên hệ thống HIS.',
+        'Nâng cấp chuẩn hóa CCCD/CMND (tự động đệm số 0 ở đầu khi CCCD có 11 chữ số do Excel format số) giúp đối soát 1-1 tuyệt đối chuẩn xác khi trùng ngày sinh.',
+      ],
+    },
     {
       version: '1.0.7',
       date: '2026-10-14',
