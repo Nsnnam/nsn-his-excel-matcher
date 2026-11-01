@@ -39,12 +39,68 @@ export function normalizeName(val: any): string {
 
 /**
  * Normalize gender: return "Nam" or "Nữ" (or "" if unspecified)
+ * Supports Vietnamese, Chinese/Taiwanese/Japanese (男, 女, Nam男, Nữ女, 男性, 女性),
+ * English (Male, Female, M, F, Man, Woman, Mr, Mrs, Ms, Miss), Korean (남, 여), Numeric (1, 2, 0)
  */
 export function normalizeGender(val: any): string {
-  const raw = removeDiacritics(normalizeText(val)).toLowerCase();
-  if (raw === 'nam' || raw === 'm' || raw === 'male') return 'Nam';
-  if (raw === 'nu' || raw === 'f' || raw === 'female') return 'Nữ';
-  return normalizeText(val);
+  if (val === null || val === undefined) return '';
+  const str = String(val).trim();
+  if (!str) return '';
+
+  const clean = removeDiacritics(str).toLowerCase().trim();
+
+  // 1. Check for Female indicators first (女, nu, nư, female, woman, girl, f, 2, 0...)
+  if (
+    str.includes('女') ||
+    str.includes('여') ||
+    clean.includes('female') ||
+    clean.includes('woman') ||
+    clean.includes('girl') ||
+    clean.includes('phu nu') ||
+    clean.includes('gai') ||
+    clean.includes('nu gioi') ||
+    clean === 'nu' ||
+    clean === 'f' ||
+    clean === '2' ||
+    clean === '0' ||
+    /\bnu\b/i.test(clean) ||
+    /^nu[\s_\-\/\(\)]/i.test(clean) ||
+    /[\s_\-\/\(\)]nu$/i.test(clean) ||
+    /^f[\s_\-\/\(\)]/i.test(clean) ||
+    /[\s_\-\/\(\)]f$/i.test(clean) ||
+    /^f\b/i.test(clean) ||
+    /^mrs\b/i.test(clean) ||
+    /^ms\b/i.test(clean) ||
+    /^miss\b/i.test(clean)
+  ) {
+    return 'Nữ';
+  }
+
+  // 2. Check for Male indicators (男, nam, male, man, boy, trai, dan ong, m, 1...)
+  if (
+    str.includes('男') ||
+    str.includes('남') ||
+    clean.includes('male') ||
+    clean.includes('man') ||
+    clean.includes('boy') ||
+    clean.includes('dan ong') ||
+    clean.includes('trai') ||
+    clean.includes('nam gioi') ||
+    clean === 'nam' ||
+    clean === 'm' ||
+    clean === '1' ||
+    /\bnam\b/i.test(clean) ||
+    /^nam[\s_\-\/\(\)]/i.test(clean) ||
+    /[\s_\-\/\(\)]nam$/i.test(clean) ||
+    /^m[\s_\-\/\(\)]/i.test(clean) ||
+    /[\s_\-\/\(\)]m$/i.test(clean) ||
+    /^m\b/i.test(clean) ||
+    /^mr\b/i.test(clean)
+  ) {
+    return 'Nam';
+  }
+
+  return normalizeText(str);
 }
 
 /**
@@ -367,8 +423,9 @@ export function extractBiaHeaders(rows: string[][]): { headers: string[]; header
 
   for (let i = 0; i < Math.min(15, rows.length); i++) {
     const r = (rows[i] || []).map(c => normalizeText(c).toLowerCase());
-    if (r.some(c => c === 'stt' || c === 'số tt' || c === 'số thứ tự') &&
-        r.some(c => c.includes('họ') || c.includes('ten') || c.includes('hovaten'))) {
+    const hasStt = r.some(c => /\bstt\b|^số\s*tt|^số\s*thứ\s*tự|序号/i.test(c));
+    const hasName = r.some(c => c.includes('họ') || c.includes('ten') || c.includes('hovaten') || c.includes('姓名'));
+    if (hasStt && hasName) {
       headerIndex = i;
       headers = (rows[i] || []).map(c => normalizeText(c));
       break;
@@ -378,7 +435,7 @@ export function extractBiaHeaders(rows: string[][]): { headers: string[]; header
   if (headerIndex === -1) {
     for (let i = 0; i < Math.min(10, rows.length); i++) {
       const r = (rows[i] || []).map(c => normalizeText(c).toLowerCase());
-      if (r.some(c => c === 'hovaten' || c === 'họ và tên' || c === 'họ tên' || c === 'tên')) {
+      if (r.some(c => c.includes('hovaten') || c.includes('họ và tên') || c.includes('họ tên') || c.includes('tên') || c.includes('姓名'))) {
         headerIndex = i;
         headers = (rows[i] || []).map(c => normalizeText(c));
         break;
@@ -430,7 +487,7 @@ export function parseHisRows(
     tenBenhNhan: headers.findIndex(h => /tên\s*bệnh\s*nhân|tên\s*bn|họ\s*và\s*tên|họ\s*tên/i.test(h)),
     ngaySinh: headers.findIndex(h => /ngày\s*sinh|ngay\s*sinh/i.test(h)),
     tuoi: headers.findIndex(h => /^tuổi$|^tuoi$/i.test(h)),
-    gioiTinh: headers.findIndex(h => /giới\s*tính|gioi\s*tinh/i.test(h)),
+    gioiTinh: headers.findIndex(h => /^gt$|giới\s*tính|gioi\s*tinh|gender|sex|phái|phai|性别|성별/i.test(h)),
     cccd: headers.findIndex(h => /cccd|cmt|căn\s*cước/i.test(h)),
     sdt: headers.findIndex(h => /sđt|sdt|điện\s*thoại/i.test(h)),
     diaChi: diaChiIndex,
@@ -533,23 +590,23 @@ export function parseBiaRows(
   }
 
   const colMap = {
-    stt: headers.findIndex(h => /^stt$|^số\s*tt$|^số\s*thứ\s*tự$/i.test(h)),
-    hoVaTen: headers.findIndex(h => /hovaten|họ\s*và\s*tên|họ\s*tên|tên/i.test(h)),
-    ns: headers.findIndex(h => /^ns$|ngày\s*sinh|ngày\s*tháng\s*năm\s*sinh/i.test(h)),
-    gt: headers.findIndex(h => /^gt$|giới\s*tính/i.test(h)),
+    stt: headers.findIndex(h => /^stt$|^số\s*tt$|^số\s*thứ\s*tự$|序号/i.test(h)),
+    hoVaTen: headers.findIndex(h => /hovaten|họ\s*và\s*tên|họ\s*tên|tên|姓名/i.test(h)),
+    ns: headers.findIndex(h => /^ns$|ngày\s*sinh|ngày\s*tháng\s*năm\s*sinh|出生/i.test(h)),
+    gt: headers.findIndex(h => /^gt$|giới\s*tính|gioi\s*tinh|gender|sex|phái|phai|性别|성별/i.test(h)),
     dc2Cap: headers.findIndex(h => /đc\s*2\s*cấp|đc\s*2cấp|địa\s*chỉ\s*2\s*cấp/i.test(h)),
-    dcChiTiet: headers.findIndex(h => /^đc$|^địa\s*chỉ$|địa\s*chỉ\s*chi\s*tiết/i.test(h)),
-    boPhan: headers.findIndex(h => /bộ\s*phận|^bp$|phòng\s*ban|^phòng$|^khoa$|đơn\s*vị|^donvi$/i.test(h)),
-    ngheNghiep: headers.findIndex(h => /nghề\s*nghiệp|nghenghiep|chức\s*vụ|chức\s*danh|vị\s*trí/i.test(h)),
-    sdt: headers.findIndex(h => /sđt|sdt|số\s*điện\s*thoại|điện\s*thoại/i.test(h)),
+    dcChiTiet: headers.findIndex(h => /^đc$|^địa\s*chỉ$|địa\s*chỉ\s*chi\s*tiết|地址/i.test(h)),
+    boPhan: headers.findIndex(h => /bộ\s*phận|^bp$|phòng\s*ban|^phòng$|^khoa$|đơn\s*vị|^donvi$|部门/i.test(h)),
+    ngheNghiep: headers.findIndex(h => /nghề\s*nghiệp|nghenghiep|chức\s*vụ|chức\s*danh|vị\s*trí|职位/i.test(h)),
+    sdt: headers.findIndex(h => /sđt|sdt|số\s*điện\s*thoại|điện\s*thoại|phone|tel|电话|手机/i.test(h)),
     tenCty: headers.findIndex(h => {
       const clean = removeDiacritics(normalizeText(h)).toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (['tencty', 'cty', 'ct', 'cq', 'cqu', 'congty', 'tencongty', 'coquan', 'tencoquan', 'tencq', 'tenct', 'doanhnghiep'].includes(clean)) {
+      if (['tencty', 'cty', 'ct', 'cq', 'cqu', 'congty', 'tencongty', 'coquan', 'tencoquan', 'tencq', 'tenct', 'doanhnghiep', 'gongsi'].includes(clean)) {
         return true;
       }
-      return /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|c\.?ty|^cty$|^c\.?t$|^c\.?q$|cơ\s*quan|co\s*quan|tên\s*cơ\s*quan|doanh\s*nghiệp/i.test(h);
+      return /tencty|tên\s*c\.?ty|tên\s*công\s*ty|công\s*ty|c\.?ty|^cty$|^c\.?t$|^c\.?q$|cơ\s*quan|co\s*quan|tên\s*cơ\s*quan|doanh\s*nghiệp|公司/i.test(h);
     }),
-    cccd: headers.findIndex(h => /cccd|cmt|số\s*cccd/i.test(h)),
+    cccd: headers.findIndex(h => /cccd|cmt|số\s*cccd|căn\s*cước|身份证/i.test(h)),
   };
 
   // Search for company in metadata rows above header if available (e.g. "Công ty: ABC", "Đơn vị: XYZ")
@@ -817,6 +874,8 @@ export function matchRecords(
 
   // Group HIS by (normalizedName, normalizedGender)
   const hisMap = new Map<string, HisRecord[]>();
+  // Also group HIS by normalizedName only for fallback resilience
+  const hisNameMap = new Map<string, HisRecord[]>();
   // Also collect common "Nơi làm việc" from HIS as fallback
   let hisDefaultCompany = '';
   const hisCompanyCounts = new Map<string, number>();
@@ -826,6 +885,10 @@ export function matchRecords(
     const list = hisMap.get(key) || [];
     list.push(h);
     hisMap.set(key, list);
+
+    const nameList = hisNameMap.get(h.normalizedName) || [];
+    nameList.push(h);
+    hisNameMap.set(h.normalizedName, nameList);
 
     const comp = normalizeText(h.noiLamViec);
     if (comp) {
@@ -850,7 +913,15 @@ export function matchRecords(
 
   for (const bia of biaRecords) {
     const key = `${bia.normalizedName}|${bia.normalizedGender}`;
-    const candidates = hisMap.get(key) || [];
+    let candidates = hisMap.get(key) || [];
+
+    // Resilient fallback: If no candidate matched by both Name + Gender, try matching by Name alone
+    if (candidates.length === 0 && bia.normalizedName) {
+      const nameCandidates = hisNameMap.get(bia.normalizedName) || [];
+      if (nameCandidates.length > 0) {
+        candidates = nameCandidates;
+      }
+    }
 
     let matchedHis: HisRecord | null = null;
     let matchStatus: MatchedRecord['matchStatus'] = 'unmatched_bia';

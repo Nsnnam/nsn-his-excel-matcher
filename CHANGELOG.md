@@ -2,6 +2,22 @@
 
 Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa Dữ Liệu KSK HIS (nsn-his-excel-matcher)** được ghi lại tại tài liệu này theo chuẩn NSN App Standard và Semantic Versioning.
 
+## [1.0.9] - 2026-11-01
+
+### Tính năng mới (Added) & Tối ưu hóa (Enhanced)
+- **Chuẩn hóa Giới tính Đa Ngôn Ngữ & Tiếng Nước Ngoài (Multi-lingual Gender Normalization):**
+  - Tự động nhận diện và chuẩn hóa tất cả các biến thể giới tính nước ngoài thường gặp trong các doanh nghiệp FDI (Đài Loan, Trung Quốc, Nhật Bản, Hàn Quốc, Âu Mỹ...):
+    - **Nữ:** `Nam男` -> loại trừ; `Nữ女`, `女`, `女性`, `여`, `female`, `woman`, `girl`, `phu nu`, `gai`, `nu gioi`, `nu`, `f`, `2`, `0`, `mrs`, `ms`, `miss` -> chuẩn hóa về **Nữ**.
+    - **Nam:** `Nam男`, `男`, `男性`, `남`, `male`, `man`, `boy`, `dan ong`, `trai`, `nam gioi`, `nam`, `m`, `1`, `mr` -> chuẩn hóa về **Nam**.
+  - Giải quyết triệt để lỗi 100% hồ sơ không khớp và rớt sang "Chưa có trên HIS" do cột giới tính chứa chữ Hán/Đài Loan song ngữ (`Nam男`, `Nữ女`).
+- **Tự động nhận diện tiêu đề cột tiếng Trung / Ngoại ngữ:**
+  - Nhận diện các tiêu đề cột file Bìa & HIS bằng tiếng Trung: `序号` (STT), `姓名` (Họ tên), `性别` (Giới tính), `出生` (Ngày sinh), `部门` (Bộ phận), `地址` (Địa chỉ), `电话` (SĐT), `身份证` (CCCD), `公司` (Công ty).
+- **Cơ chế dự phòng đối soát theo Họ Tên (Resilient Name Fallback):**
+  - Bổ sung `hisNameMap`: Khi hồ sơ Bìa không tìm thấy ứng viên theo cả Cặp `Họ tên + Giới tính` (do file nguồn thiếu giới tính hoặc định dạng dị biệt), hệ thống tự động tìm kiếm dự phòng theo Họ Tên và Ngày sinh/CCCD trên HIS.
+  - Ngăn ngừa hoàn toàn rủi ro rớt hồ sơ sang trạng thái chưa có trên HIS.
+
+---
+
 ## [1.0.8] - 2026-10-17
 
 ### Tính năng mới (Added) & Tối ưu hóa (Enhanced)

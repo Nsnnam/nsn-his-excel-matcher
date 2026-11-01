@@ -59,7 +59,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             <div className="flex items-center space-x-2 text-sky-900">
               <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
               <span className="font-medium text-[11px]">
-                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Tự động phân biệt người cùng năm sinh bằng ngày/tháng sinh, loại bỏ cảnh báo sai & 100% khớp chuẩn.
+                Phiên bản hiện tại: <strong className="font-bold text-sky-800">v{APP_META.version} ({APP_META.releaseDate})</strong> — Chuẩn hóa giới tính đa ngôn ngữ (Tiếng Trung, Đài Loan, Anh, Hàn), phân biệt cùng năm sinh bằng ngày/tháng sinh & 100% khớp chuẩn.
               </span>
             </div>
             {onOpenHistory && (
@@ -74,11 +74,38 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             )}
           </div>
 
-          {/* Section 1: Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8 MỚI) */}
+          {/* Section 1: Chuẩn Hóa Giới Tính Đa Ngôn Ngữ & Ký Tự Nước Ngoài (v1.0.9 MỚI) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">1</span>
-              Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8 MỚI)
+              Chuẩn Hóa Giới Tính Đa Ngôn Ngữ & Ký Tự Nước Ngoài (v1.0.9 MỚI)
+            </h4>
+            <div className="pl-6 space-y-2">
+              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-2">
+                <div className="font-bold text-emerald-900 flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  Xử lý dữ liệu doanh nghiệp FDI (Đài Loan, Trung Quốc, Hàn Quốc, Âu Mỹ):
+                </div>
+                <ul className="space-y-1.5 text-[11px] text-emerald-800 list-disc list-inside">
+                  <li>
+                    <strong>Nhận diện từ ngữ nước ngoài & song ngữ:</strong> Tự động nhận diện và chuyển đổi chuẩn xác <code>Nam男</code>, <code>男</code>, <code>Male</code>, <code>Man</code>, <code>M</code>, <code>1</code> về <strong>Nam</strong>; và <code>Nữ女</code>, <code>女</code>, <code>Female</code>, <code>Woman</code>, <code>F</code>, <code>2</code> về <strong>Nữ</strong>.
+                  </li>
+                  <li>
+                    <strong>Tự động nhận diện tiêu đề cột tiếng Trung:</strong> Tự động hiểu các cột như <code>序号</code> (STT), <code>姓名</code> (Họ tên), <code>性别</code> (Giới tính), <code>出生</code> (Ngày sinh), <code>部门</code> (Bộ phận), <code>地址</code> (Địa chỉ), <code>电话</code> (SĐT), <code>身份证</code> (CCCD), <code>公司</code> (Công ty).
+                  </li>
+                  <li>
+                    <strong>Cơ chế dự phòng theo Họ Tên (Name Fallback):</strong> Trường hợp một bên bị thiếu giới tính hoặc định dạng dị biệt, hệ thống vẫn tự động tìm kiếm đối soát theo Họ Tên và Ngày sinh, đảm bảo không bỏ sót hồ sơ sang mục &ldquo;Chưa có trên HIS&rdquo;.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8) */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
+              Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8)
             </h4>
             <div className="pl-6 space-y-2">
               <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg space-y-2">
@@ -104,10 +131,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 2: Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7) */}
+          {/* Section 3: Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">2</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
               Tùy Chọn & Ưu Tiên Nơi Làm Việc / Tên C.ty & Địa Chỉ Công Ty (v1.0.7)
             </h4>
             <div className="pl-6 space-y-2">
@@ -134,10 +161,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 3: Tự động nhận diện Địa chỉ & Ưu tiên nguồn */}
+          {/* Section 4: Tự động nhận diện Địa chỉ & Ưu tiên nguồn */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">3</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
               Quy Tắc Nhận Diện Địa Chỉ & Thứ Tự Ưu Tiên Nguồn (v1.0.5)
             </h4>
             <div className="pl-6 space-y-2">
@@ -158,10 +185,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 4: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4) */}
+          {/* Section 5: Hỗ trợ nạp nhiều file & Thay thế trực tiếp (v1.0.4) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">4</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">5</span>
               Nạp Nhiều File & Thay Thế Trực Tiếp (v1.0.4)
             </h4>
             <div className="pl-6 space-y-2">
@@ -188,10 +215,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 5: Chuẩn bị file */}
+          {/* Section 6: Chuẩn bị file */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">5</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">6</span>
               Chuẩn Bị Định Dạng File Excel Đầu Vào
             </h4>
             <div className="pl-6 space-y-2">
@@ -217,10 +244,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 6: Nhận diện Tên công ty & Fallback từ HIS (v1.0.3) */}
+          {/* Section 7: Nhận diện Tên công ty & Fallback từ HIS (v1.0.3) */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">6</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">7</span>
               Nhận Diện Tên Công Ty & Tự Động Lấy Từ "Nơi Làm Việc" HIS
             </h4>
             <div className="pl-6 space-y-2">
@@ -244,10 +271,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 7: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
+          {/* Section 8: Quy tắc đối soát tuổi & cảnh báo trùng tên */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">7</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">8</span>
               Quy Tắc Đối Soát Ngày Sinh / Tuổi & Cảnh Báo Trùng Tên
             </h4>
             <div className="pl-6 space-y-2">
@@ -279,10 +306,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
             </div>
           </div>
 
-          {/* Section 8: Xuất File Mẫu Chuẩn NSN */}
+          {/* Section 9: Xuất File Mẫu Chuẩn NSN */}
           <div className="space-y-2">
             <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">8</span>
+              <span className="w-5 h-5 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">9</span>
               Xuất File Mẫu Chuẩn Cho In Tem Nhãn (BarTender & Mail Merge)
             </h4>
             <div className="pl-6 space-y-2">

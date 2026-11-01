@@ -4,13 +4,13 @@
 
 | Thông tin | Giá trị chuẩn |
 |---|---|
-| **Phiên bản** | `1.0.8` (Mới nhất) |
-| **Ngày phát hành** | 2026-10-17 |
+| **Phiên bản** | `1.0.9` (Mới nhất) |
+| **Ngày phát hành** | 2026-11-01 |
 | **Tác giả** | [Nguyễn Sơn Nam (Nsnnam / NamNS)](https://github.com/Nsnnam) |
 | **Múi giờ** | GMT+7 (`Asia/Ho_Chi_Minh`) |
 | **Kho mã nguồn** | [https://github.com/Nsnnam/nsn-his-excel-matcher](https://github.com/Nsnnam/nsn-his-excel-matcher) |
 | **Trang trực tuyến (Live)** | [https://nsnnam.github.io/nsn-his-excel-matcher/](https://nsnnam.github.io/nsn-his-excel-matcher/) |
-| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.8-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
+| **Bản chạy Offline 100%** | `releases/nsn-his-excel-matcher-v1.0.9-offline.html` (Hoặc file standalone copy trực tiếp trên Desktop) |
 | **Khóa truy cập** | `namns` (Không phân biệt hoa thường) |
 | **Giấy phép** | MIT (Public Open-Source) |
 
@@ -18,11 +18,23 @@
 
 ## Tính năng nổi bật & Quy trình nghiệp vụ
 
-### 1. Khóa bảo mật truy cập chuẩn NSN (Popup Modal)
+### 1. Chuẩn Hóa Giới Tính Đa Ngôn Ngữ & Tiếng Nước Ngoài (v1.0.9 MỚI)
+- **Hỗ trợ đầy đủ ngôn ngữ cho các công ty FDI (Đài Loan, Trung Quốc, Nhật Bản, Hàn Quốc, Âu Mỹ):**
+  - Tự động nhận diện và chuẩn hóa tất cả các biến thể giới tính:
+    - **Nữ:** `Nữ女`, `女`, `女性`, `여`, `female`, `woman`, `girl`, `phu nu`, `gai`, `nu gioi`, `nu`, `f`, `2`, `0`, `mrs`, `ms`, `miss` -> chuẩn hóa về **Nữ**.
+    - **Nam:** `Nam男`, `男`, `男性`, `남`, `male`, `man`, `boy`, `dan ong`, `trai`, `nam gioi`, `nam`, `m`, `1`, `mr` -> chuẩn hóa về **Nam**.
+  - Giải quyết triệt để lỗi không tìm thấy hồ sơ để ghép (100% rớt sang "Chưa có trên HIS") khi cột giới tính chứa tiếng Trung/Đài Loan song ngữ (`Nam男`, `Nữ女`).
+- **Tự động nhận diện tiêu đề cột tiếng Trung / Ngoại ngữ:**
+  - Nhận diện các tiêu đề cột file Bìa & HIS bằng tiếng Trung: `序号` (STT), `姓名` (Họ tên), `性别` (Giới tính), `出生` (Ngày sinh), `部门` (Bộ phận), `地址` (Địa chỉ), `电话` (SĐT), `身份证` (CCCD), `公司` (Công ty).
+- **Cơ chế dự phòng đối soát theo Họ Tên (Resilient Name Fallback):**
+  - Bổ sung `hisNameMap`: Khi hồ sơ Bìa không tìm thấy ứng viên theo cả Cặp `Họ tên + Giới tính` (do file nguồn thiếu giới tính hoặc định dạng dị biệt), hệ thống tự động tìm kiếm dự phòng theo Họ Tên và Ngày sinh/CCCD trên HIS.
+  - Đảm bảo tỷ lệ ghép đạt 100% chính xác.
+
+### 2. Khóa bảo mật truy cập chuẩn NSN (Popup Modal)
 - Tích hợp màn hình khóa bảo mật khớp chuẩn với mã truy cập `namns` (chấp nhận chữ hoa, chữ thường, không dấu).
 - Bảo mật chữ ký SHA-256 nội bộ, lưu trạng thái mở khóa vào `localStorage` tiện lợi.
 
-### 2. Thuật Toán Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8 MỚI)
+### 3. Thuật Toán Đối Soát Ngày Sinh Phân Tầng — Phân Biệt Cùng Năm Sinh Bằng Ngày/Tháng (v1.0.8)
 - **So sánh chi tiết cả ngày, tháng và năm sinh:**
   - Tự động so sánh chi tiết ngày và tháng sinh khi phát hiện các trường hợp cùng họ tên và cùng năm sinh (cùng tuổi).
   - Phân biệt chính xác từng cá nhân: Những người cùng năm sinh nhưng khác ngày/tháng sinh (ví dụ: `02/09/1997` vs `22/10/1997`) được xác định chuẩn xác là 2 cá nhân hoàn toàn khác nhau.

@@ -2,9 +2,9 @@ export const APP_META = {
   name: 'Ghép & Chuẩn Hóa Dữ Liệu KSK HIS',
   shortName: 'HIS Excel Matcher',
   appCode: 'HISMATCH',
-  version: '1.0.8',
-  releaseDate: '2026-10-17',
-  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động nhận diện và cung cấp đầy đủ tùy chọn cột Nơi làm việc, Tên C.ty, Địa chỉ công ty, Địa chỉ cá nhân, Bộ phận cho cả 2 file, hỗ trợ tùy chọn nguồn ưu tiên Nơi làm việc và Địa chỉ, thuật toán đối soát ngày sinh phân tầng thông minh theo ngày/tháng/năm và xuất Excel chuẩn General Text.',
+  version: '1.0.9',
+  releaseDate: '2026-11-01',
+  description: 'Ghép dữ liệu khám sức khỏe từ VNPT-HIS & Danh sách Bìa sang File Mẫu Chuẩn NSN, tự động chuẩn hóa giới tính đa ngôn ngữ (Việt, Trung, Đài Loan, Anh, Hàn), tự động nhận diện và cung cấp đầy đủ tùy chọn cột Nơi làm việc, Tên C.ty, Địa chỉ công ty, Địa chỉ cá nhân, Bộ phận cho cả 2 file, hỗ trợ tùy chọn nguồn ưu tiên Nơi làm việc và Địa chỉ, thuật toán đối soát ngày sinh phân tầng thông minh theo ngày/tháng/năm và xuất Excel chuẩn General Text.',
   author: {
     name: 'Nguyễn Sơn Nam',
     alias: 'Nsnnam / NamNS / NSN',
@@ -24,6 +24,16 @@ export const APP_META = {
   },
   timezone: 'Asia/Ho_Chi_Minh',
   changelog: [
+    {
+      version: '1.0.9',
+      date: '2026-11-01',
+      features: [
+        'Hỗ trợ toàn diện nhận diện và chuẩn hóa Giới tính đa ngôn ngữ / từ ngữ nước ngoài: Tiếng Trung, Đài Loan, Nhật Bản (Nam男, Nữ女, 男, 女, 男性, 女性), Tiếng Anh (Male, Female, M, F, Man, Woman, Mr, Mrs, Ms, Miss), Tiếng Hàn (남, 여) và chữ số (1=Nam, 2=Nữ, 0=Nữ).',
+        'Giải quyết triệt để lỗi không tìm thấy hồ sơ để ghép do cột giới tính chứa song ngữ hoặc ký tự nước ngoài (ví dụ các công ty FDI Đài Loan/Trung Quốc như Foxconn, M&K, Luxshare...).',
+        'Tự động nhận diện tiêu đề cột tiếng Trung / nước ngoài trên file Bìa và HIS (STT / 序号, Họ tên / 姓名, Ngày sinh / 出生, Giới tính / 性别, Bộ phận / 部门, Địa chỉ / 地址, SĐT / 电话, CCCD / 身份证, Công ty / 公司).',
+        'Cơ chế dự phòng thông minh (Fallback matching by Name): Tự động tìm kiếm dự phòng theo Họ Tên nếu giới tính bị bỏ trống hoặc không khớp mã, loại bỏ tình trạng rớt hồ sơ sang Chưa có trên HIS.',
+      ],
+    },
     {
       version: '1.0.8',
       date: '2026-10-17',
