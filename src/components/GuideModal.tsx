@@ -31,10 +31,10 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-sky-600 to-sky-700 px-6 py-4 text-white flex items-center justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-200">
+        {/* Header - Fixed shrink-0 */}
+        <div className="bg-gradient-to-r from-sky-600 to-sky-700 px-6 py-4 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2.5">
             <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-xs">
               <BookOpen className="w-5 h-5 text-sky-200" />
@@ -53,7 +53,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs text-slate-600 leading-relaxed">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 overscroll-contain text-xs text-slate-600 leading-relaxed">
           {/* Quick Version Banner */}
           <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 flex items-center justify-between gap-3">
             <div className="flex items-center space-x-2 text-sky-900">
@@ -350,8 +350,8 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose, onOpenH
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
+        {/* Footer - Fixed shrink-0 */}
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
           <div className="text-[11px] text-slate-400">
             Tác giả: <strong>{APP_META.author.name}</strong> · Múi giờ: GMT+7
           </div>

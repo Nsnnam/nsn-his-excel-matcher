@@ -32,6 +32,7 @@ export const APP_META = {
         'Giải quyết triệt để lỗi không tìm thấy hồ sơ để ghép do cột giới tính chứa song ngữ hoặc ký tự nước ngoài (ví dụ các công ty FDI Đài Loan/Trung Quốc như Foxconn, M&K, Luxshare...).',
         'Tự động nhận diện tiêu đề cột tiếng Trung / nước ngoài trên file Bìa và HIS (STT / 序号, Họ tên / 姓名, Ngày sinh / 出生, Giới tính / 性别, Bộ phận / 部门, Địa chỉ / 地址, SĐT / 电话, CCCD / 身份证, Công ty / 公司).',
         'Cơ chế dự phòng thông minh (Fallback matching by Name): Tự động tìm kiếm dự phòng theo Họ Tên nếu giới tính bị bỏ trống hoặc không khớp mã, loại bỏ tình trạng rớt hồ sơ sang Chưa có trên HIS.',
+        'Khắc phục triệt để lỗi cuộn ở modal Lịch sử phiên bản: Chuyển sang bố cục Flexbox cố định Header và Footer, nội dung cuộn độc lập (flex-1 overflow-y-auto), tự động cuộn về đỉnh (top: 0) khi mở modal và bổ sung nút "Cuộn lên đầu", đảm bảo xem trọn vẹn từ phiên bản mới nhất đến cũ nhất.',
       ],
     },
     {

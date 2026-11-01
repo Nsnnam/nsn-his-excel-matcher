@@ -15,6 +15,10 @@ Tất cả các thay đổi đáng chú ý của dự án **Ghép & Chuẩn Hóa
 - **Cơ chế dự phòng đối soát theo Họ Tên (Resilient Name Fallback):**
   - Bổ sung `hisNameMap`: Khi hồ sơ Bìa không tìm thấy ứng viên theo cả Cặp `Họ tên + Giới tính` (do file nguồn thiếu giới tính hoặc định dạng dị biệt), hệ thống tự động tìm kiếm dự phòng theo Họ Tên và Ngày sinh/CCCD trên HIS.
   - Ngăn ngừa hoàn toàn rủi ro rớt hồ sơ sang trạng thái chưa có trên HIS.
+- **Khắc phục lỗi cuộn ở modal Lịch sử phiên bản (Changelog Scroll Bugfix):**
+  - Khắc phục hiện tượng modal bị lệch trục dọc (negative top offset) khiến header, thanh tab và các phiên bản mới nhất bị che khuất ngoài màn hình, chỉ cuộn được xuống dưới mà không cuộn lên trên được.
+  - Tái cấu trúc modal sang chuẩn `flex flex-col max-h-[90vh]` với Header và Footer cố định (`shrink-0`), nội dung bên trong cuộn độc lập (`flex-1 overflow-y-auto overscroll-contain`).
+  - Tự động reset vị trí cuộn về đỉnh (`scrollTop = 0`) mỗi khi mở modal hoặc chuyển tab, kèm nút bấm nhanh "Cuộn lên đầu" ở chân modal.
 
 ---
 

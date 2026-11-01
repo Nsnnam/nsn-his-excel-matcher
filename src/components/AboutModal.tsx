@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Coffee, Check, Copy, ExternalLink, ShieldCheck, History, Info, Sparkles, Tag } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Coffee, Check, Copy, ExternalLink, ShieldCheck, History, Info, Sparkles, Tag, ArrowUp } from 'lucide-react';
 import { APP_META } from '../constants/meta';
 
 interface AboutModalProps {
@@ -11,12 +11,26 @@ interface AboutModalProps {
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initialTab = 'coffee' }) => {
   const [copied, setCopied] = useState(false);
   const [modalTab, setModalTab] = useState<'coffee' | 'history' | 'about'>(initialTab);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setModalTab(initialTab);
+      // Reset scroll position to top whenever modal opens
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+        }
+      });
     }
   }, [isOpen, initialTab]);
+
+  useEffect(() => {
+    // Reset scroll position to top whenever switching tabs
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [modalTab]);
 
   if (!isOpen) return null;
 
@@ -27,10 +41,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initial
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-sky-600 to-sky-700 px-6 py-4 text-white flex items-center justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] my-auto transform transition-all animate-in fade-in zoom-in-95 duration-200">
+        {/* Header - Fixed shrink-0 */}
+        <div className="bg-gradient-to-r from-sky-600 to-sky-700 px-6 py-4 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2.5">
             <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-xs">
               <Sparkles className="w-5 h-5 text-amber-300" />
@@ -48,8 +62,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initial
           </button>
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2">
+        {/* Tab Buttons - Fixed shrink-0 */}
+        <div className="flex border-b border-slate-200 bg-slate-50 px-6 pt-2 shrink-0">
           <button
             onClick={() => setModalTab('history')}
             className={`pb-2.5 px-3 text-sm font-semibold border-b-2 flex items-center space-x-1.5 transition-colors cursor-pointer ${
@@ -90,19 +104,22 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initial
           </button>
         </div>
 
-        {/* Tab Contents */}
-        <div className="p-6">
+        {/* Tab Body - Dedicated Scrollable Container */}
+        <div ref={scrollContainerRef} className="p-6 overflow-y-auto flex-1 overscroll-contain">
           {/* 1. LỊCH SỬ PHIÊN BẢN */}
           {modalTab === 'history' && (
-            <div className="space-y-4 max-h-85 overflow-y-auto pr-1">
-              <div className="text-xs text-slate-500 mb-2">
-                Nhật ký cập nhật và cải tiến chi tiết theo chuẩn NSN App Standard:
+            <div className="space-y-4 pr-1">
+              <div className="text-xs text-slate-500 mb-2 flex items-center justify-between">
+                <span>Nhật ký cập nhật và cải tiến chi tiết theo chuẩn NSN App Standard:</span>
+                <span className="text-[11px] text-sky-700 font-medium">({APP_META.changelog.length} phiên bản)</span>
               </div>
               {APP_META.changelog.map((log, index) => (
                 <div
                   key={log.version}
-                  className={`pl-4 py-2 border-l-2 ${
-                    index === 0 ? 'border-sky-500 bg-sky-50/50 rounded-r-lg p-2.5' : 'border-slate-300'
+                  className={`pl-4 py-2.5 border-l-2 transition-colors ${
+                    index === 0
+                      ? 'border-sky-500 bg-sky-50/70 rounded-r-xl p-3 shadow-xs'
+                      : 'border-slate-300 hover:border-slate-400'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -209,8 +226,26 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, initial
           )}
         </div>
 
-        {/* Footer */}
-        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
+        {/* Footer - Fixed shrink-0 */}
+        <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+          {modalTab === 'history' ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="text-xs text-sky-700 hover:text-sky-800 font-medium flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              <span>Cuộn lên đầu</span>
+            </button>
+          ) : (
+            <div className="text-[11px] text-slate-400">
+              Chuẩn NSN App Standard
+            </div>
+          )}
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"

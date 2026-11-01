@@ -47,10 +47,10 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] my-auto animate-in fade-in zoom-in-95 duration-150">
+        {/* Header - Fixed shrink-0 */}
+        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
               <AlertTriangle className="w-5 h-5" />
@@ -70,7 +70,7 @@ export const DisambiguationModal: React.FC<DisambiguationModalProps> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 overscroll-contain">
           {/* Target Bia Profile */}
           <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
             <div className="text-xs font-bold text-sky-900 uppercase tracking-wider mb-2">
